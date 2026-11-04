@@ -1,6 +1,6 @@
 # 系图
 
-系图（拼音 Xitu）是一个截图晾衣绳。Windows 版把每张截图挂到每块屏幕顶边的一条绳子上；Linux 版跑在 Hyprland + Quickshell 上，默认右上角抽屉，可切换成顶边绳子。从 `alejandrobujan/tendedero`（MIT，见 `LICENSE-tendedero`）移植；程序名和图标不在该许可证范围内，本程序不叫 Tendedero。
+系图（拼音 Xitu）是一个截图晾衣绳。Windows 版把每张截图挂到每块屏幕顶边的一条绳子上；Linux 版跑在 Hyprland + Quickshell 上，默认右上角抽屉，可切换成顶边绳子。从 `alejandrobujan/tendedero`（MIT，见 `NOTICE`）移植；程序名和图标不在该许可证范围内，本程序不叫 Tendedero。
 
 ## 是什么
 
@@ -19,7 +19,7 @@
 | `windows/` | Windows 源码（`Clothesline.csproj`，WPF；`Assets/`、`Capture/`、`tools/make-icon/`） |
 | `linux/` | Linux 源码（Quickshell 壳：QML、`xitu_helper.py`、主题 JSON） |
 | `docs/` | 演示图 |
-| `LICENSE`、`NOTICE`、`LICENSE-tendedero` | 许可与致谢 |
+| `LICENSE`、`NOTICE` | 许可与致谢 |
 
 ## 功能
 
@@ -131,6 +131,6 @@ Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注�
 
 ## 致谢与许可
 
-- 系图从 Alejandro Buján 的 tendedero（MIT）移植，原仓库 `alejandrobujan/tendedero`，许可证见 `LICENSE-tendedero`。
+- 系图从 Alejandro Buján 的 tendedero（MIT）移植，原仓库 `alejandrobujan/tendedero`，许可证全文附在 `NOTICE` 末尾。
 - 本仓库按 MIT 许可发布（`LICENSE`，版权行 `Copyright (c) 2026 quin-nqin46`），另见 `NOTICE`。
 - 「系图」这个名字和图标不在原许可证范围内，本程序不叫 Tendedero。
