@@ -1,0 +1,46 @@
+{
+  "name": "红绳",
+  "accent": "#3D6FE0",
+  "rope": {
+    "color": "#B5302A",
+    "width": 2.5,
+    "shadowColor": "rgba(0,0,0,0.35)",
+    "shadowWidth": 3,
+    "shadowOffset": 2,
+    "texture": "none"
+  },
+  "ends": {
+    "style": "knot",
+    "inset": 90,
+    "pinColor": "#FFFFFF",
+    "pinRing": "rgba(30,40,70,0.20)",
+    "dotColor": "#B5302A",
+    "radius": 14,
+    "dotRadius": 3.5
+  },
+  "clip": {
+    "color": "#C8A57A",
+    "width": 10,
+    "height": 28,
+    "radius": 2,
+    "highlight": "",
+    "above": 9.5,
+    "below": 18.5,
+    "border": "#94744C",
+    "shadow": false
+  },
+  "frame": {
+    "paper": "#FFFFFF",
+    "padLeft": 5,
+    "padTop": 5,
+    "padRight": 5,
+    "padBottom": 5,
+    "radius": 10,
+    "photoRadius": 6
+  },
+  "hint": {
+    "bg": "#F6F1E7",
+    "fg": "#2E3440",
+    "border": ""
+  }
+}
