@@ -1,6 +1,6 @@
 # Xitu
 
-Xitu (Chinese: 系图) is a screenshot clothesline. On Windows every screenshot hangs on a rope along the top edge of each screen. The Linux port runs on Hyprland + Quickshell and shows a drawer in the top-right corner by default, switchable to the top-edge rope. Ported from `alejandrobujan/tendedero` (MIT, see `LICENSE-tendedero`); the program name and icon are not covered by that license, and this program is not called Tendedero.
+Xitu (Chinese: 系图) is a screenshot clothesline. On Windows every screenshot hangs on a rope along the top edge of each screen. The Linux port runs on Hyprland + Quickshell and shows a drawer in the top-right corner by default, switchable to the top-edge rope. Ported from `alejandrobujan/tendedero` (MIT, see `NOTICE`); the program name and icon are not covered by that license, and this program is not called Tendedero.
 
 ## What it is
 
@@ -19,7 +19,7 @@ The demo images below were rendered by the program with placeholder images (no r
 | `windows/` | Windows source (`Clothesline.csproj`, WPF; `Assets/`, `Capture/`, `tools/make-icon/`) |
 | `linux/` | Linux source (Quickshell shell: QML, `xitu_helper.py`, theme JSON) |
 | `docs/` | demo images |
-| `LICENSE`, `NOTICE`, `LICENSE-tendedero` | licensing |
+| `LICENSE`, `NOTICE` | licensing |
 
 ## Features
 
@@ -131,6 +131,6 @@ Windows paths are listed under "Windows build and install". Linux paths, with th
 
 ## Acknowledgments and license
 
-- Xitu is a port of `alejandrobujan/tendedero` by Alejandro Buján, MIT licensed (`LICENSE-tendedero`).
+- Xitu is a port of `alejandrobujan/tendedero` by Alejandro Buján, MIT licensed; its license is reproduced in `NOTICE`.
 - This repository is MIT licensed (`LICENSE`, copyright line `Copyright (c) 2026 quin-nqin46`); see also `NOTICE`.
 - The name Xitu and the icon are not part of the original license, and this program is not called Tendedero.
