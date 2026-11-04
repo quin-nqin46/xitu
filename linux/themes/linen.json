@@ -1,0 +1,50 @@
+{
+  "name": "柔和麻绳",
+  "accent": "#3D6FE0",
+  "rope": {
+    "color": "#B8A58C",
+    "width": 4,
+    "shadowColor": "rgba(40,30,20,0.2)",
+    "shadowWidth": 5,
+    "shadowOffset": 2,
+    "texture": "twist"
+  },
+  "ends": {
+    "style": "none",
+    "inset": 0,
+    "pinColor": "#FFFFFF",
+    "pinRing": "rgba(30,40,70,0.20)",
+    "dotColor": "accent",
+    "radius": 8,
+    "dotRadius": 3.5
+  },
+  "clip": {
+    "color": "#D9BF98",
+    "width": 10,
+    "height": 26,
+    "radius": 2,
+    "highlight": "rgba(120,90,50,0.35)",
+    "highlightWidth": 1,
+    "highlightHeight": 22,
+    "highlightRadius": 0,
+    "highlightShift": 0,
+    "above": 11,
+    "below": 15,
+    "border": "",
+    "shadow": true
+  },
+  "frame": {
+    "paper": "#F6F1E7",
+    "padLeft": 5,
+    "padTop": 5,
+    "padRight": 5,
+    "padBottom": 5,
+    "radius": 8,
+    "photoRadius": 6
+  },
+  "hint": {
+    "bg": "#F6F1E7",
+    "fg": "#2E3440",
+    "border": ""
+  }
+}

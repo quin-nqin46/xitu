@@ -1,0 +1,46 @@
+{
+  "name": "石墨细线",
+  "accent": "#3D6FE0",
+  "rope": {
+    "color": "#5B6478",
+    "width": 2,
+    "shadowColor": "rgba(20,30,60,0.22)",
+    "shadowWidth": 3,
+    "shadowOffset": 1.5,
+    "texture": "none"
+  },
+  "ends": {
+    "style": "none",
+    "inset": 0,
+    "pinColor": "#FFFFFF",
+    "pinRing": "rgba(30,40,70,0.20)",
+    "dotColor": "accent",
+    "radius": 8,
+    "dotRadius": 3.5
+  },
+  "clip": {
+    "color": "#FFFFFF",
+    "width": 10,
+    "height": 20,
+    "radius": 5,
+    "highlight": "",
+    "above": 9,
+    "below": 11,
+    "border": "rgba(30,40,70,0.25)",
+    "shadow": true
+  },
+  "frame": {
+    "paper": "#FFFFFF",
+    "padLeft": 5,
+    "padTop": 5,
+    "padRight": 5,
+    "padBottom": 5,
+    "radius": 10,
+    "photoRadius": 6
+  },
+  "hint": {
+    "bg": "#FFFFFF",
+    "fg": "#2E3440",
+    "border": "rgba(30,40,70,0.25)"
+  }
+}

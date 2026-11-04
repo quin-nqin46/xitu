@@ -1,0 +1,13 @@
+bin/
+obj/
+publish/
+dist/
+.vs/
+*.user
+__pycache__/
+*.pyc
+linux/tools/out/
+linux/tools/layout.js
+linux/tools/DrawerPanel.qml
+linux/tools/Card.qml
+linux/tools/Rope.qml

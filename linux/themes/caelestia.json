@@ -1,0 +1,53 @@
+{
+  "name": "Caelestia",
+  "accent": "#afc9eb",
+  "rope": {
+    "color": "#afc9eb",
+    "width": 3,
+    "shadowColor": "rgba(0,0,0,0.35)",
+    "shadowWidth": 4,
+    "shadowOffset": 2,
+    "texture": "none"
+  },
+  "ends": {
+    "style": "pin",
+    "inset": 40,
+    "pinColor": "#e1e5ef",
+    "pinRing": "rgba(0,0,0,0.35)",
+    "dotColor": "#afc9eb",
+    "radius": 8,
+    "dotRadius": 3.5
+  },
+  "clip": {
+    "color": "#afc9eb",
+    "width": 12,
+    "height": 22,
+    "radius": 3,
+    "highlight": "rgba(255,255,255,0.4)",
+    "highlightWidth": 2,
+    "highlightHeight": 16,
+    "highlightRadius": 1,
+    "highlightShift": -2.5,
+    "above": 10,
+    "below": 12,
+    "border": "",
+    "shadow": true
+  },
+  "frame": {
+    "paper": "#161a1f",
+    "padLeft": 7,
+    "padTop": 7,
+    "padBottom": 22,
+    "padRight": 7,
+    "radius": 8,
+    "photoRadius": 4
+  },
+  "hint": {
+    "bg": "#161a1f",
+    "fg": "#e1e5ef",
+    "border": "rgba(225,229,239,0.2)"
+  },
+  "gallery": {
+    "bg": "#0c0e12"
+  }
+}

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Xitu</AssemblyName>
+    <RootNamespace>Clothesline</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\xitu.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Product>系图</Product>
+    <AssemblyTitle>系图</AssemblyTitle>
+    <Description>系图</Description>
+    <Version>0.2.2</Version>
+    <AssemblyVersion>0.2.2.0</AssemblyVersion>
+    <FileVersion>0.2.2.0</FileVersion>
+  </PropertyGroup>
+
+  <!-- WinForms 与 WPF 的全局 using 会让 Application、Color、Point 等冲突。托盘文件自行加别名。 -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <!-- 框架自带，不走 NuGet。C# 项目不会自动引用它，指向当前 targeting pack。 -->
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic">
+      <HintPath>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Ref\$(BundledNETCoreAppPackageVersion)\ref\net8.0\Microsoft.VisualBasic.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 测试脚手架和发布输出不进主程序。 -->
+  <ItemGroup>
+    <Compile Remove="_test/**;publish/**;tools/**;dist/**" />
+    <None Remove="_test/**;publish/**;tools/**;dist/**" />
+    <Resource Include="Assets\xitu.ico" />
+  </ItemGroup>
+
+</Project>
