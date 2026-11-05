@@ -1,18 +1,37 @@
-# Xitu
+<p align="center">
+  <img src="windows/Assets/xitu-256.png" width="96" alt="Xitu icon">
+</p>
 
-Xitu (Chinese: 系图) is a screenshot clothesline. On Windows every screenshot hangs on a rope along the top edge of each screen. The Linux port runs on Hyprland + Quickshell and shows a drawer in the top-right corner by default, switchable to the top-edge rope. Ported from `alejandrobujan/tendedero` (MIT, see `NOTICE`); the program name and icon are not covered by that license, and this program is not called Tendedero.
+<h1 align="center">Xitu 系图</h1>
+
+<p align="center">
+  A clothesline for your screenshots — new captures hang on a rope at the top of the screen,<br>
+  ready to copy, open, or drag into a chat.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-b5302a" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/Windows-.NET%208%20%2F%20WPF-2e3440" alt="Windows">
+  <img src="https://img.shields.io/badge/Linux-Hyprland%20%2B%20Quickshell-c8a57a" alt="Linux">
+</p>
+
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
+
+<p align="center">
+  <img src="docs/demo-rope.gif" alt="Screenshots flying onto the rope, then switching rope themes">
+</p>
 
 ## What it is
 
-Xitu hangs your screenshots on a line, like photos on a clothesline. New screenshots from your screenshot folder or clipboard hang up on their own and can be copied, opened, or taken down from the line itself.
+Screenshots usually vanish into a folder. Xitu keeps the last few in sight: anything that lands in your screenshot folder or clipboard drops onto a rope along the top edge of the screen, sways for a moment, and stays there until you take it down. Click to copy, double-click to open, drag a photo straight into a chat window.
 
-The demo images below were rendered by the program with placeholder images (no real screenshots):
+On Windows it is a tray app with one rope per screen. On Linux it runs on Hyprland with Quickshell, as a top-right drawer by default or as the same rope.
 
-![Drawer expanded](docs/demo-drawer.png)
+<p align="center">
+  <img src="docs/demo-drawer.gif" width="640" alt="Linux drawer mode: a new screenshot takes the big slot">
+</p>
 
-![Drawer drag hover](docs/demo-drawer-drop.png)
-
-![Rope mode](docs/demo-rope.png)
+Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendedero) for macOS (MIT, see `NOTICE`). It has its own name and icon and is not Tendedero.
 
 | Path | Contents |
 |---|---|
@@ -41,6 +60,11 @@ Linux (Hyprland + Quickshell):
 - Two UI modes: `drawer` (top-right drawer, default) and `rope` (top edge). The environment variable `XITU_UI=drawer|rope` takes priority over the `ui` field in `settings.json`.
 - No tray menu; expand, gallery and quit are triggered with `qs ipc` (see below) or from your bar or key bindings.
 - Drag cards to reorder. Rope and card colors (themes) can be switched over IPC without restarting.
+- Drag an image from a browser or file manager onto the top edge: the drawer opens and takes it in.
+
+<p align="center">
+  <img src="docs/demo-drawer-drop.png" width="420" alt="Dragging an image over the drawer">
+</p>
 
 ## Windows build and install
 

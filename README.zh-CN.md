@@ -1,18 +1,37 @@
-# 系图
+<p align="center">
+  <img src="windows/Assets/xitu-256.png" width="96" alt="系图图标">
+</p>
 
-系图（拼音 Xitu）是一个截图晾衣绳。Windows 版把每张截图挂到每块屏幕顶边的一条绳子上；Linux 版跑在 Hyprland + Quickshell 上，默认右上角抽屉，可切换成顶边绳子。从 `alejandrobujan/tendedero`（MIT，见 `NOTICE`）移植；程序名和图标不在该许可证范围内，本程序不叫 Tendedero。
+<h1 align="center">系图 Xitu</h1>
+
+<p align="center">
+  给截图一根晾衣绳：新截的图挂在屏幕顶上，<br>
+  随手复制、打开，或者直接拖进聊天框。
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-b5302a" alt="MIT 许可"></a>
+  <img src="https://img.shields.io/badge/Windows-.NET%208%20%2F%20WPF-2e3440" alt="Windows">
+  <img src="https://img.shields.io/badge/Linux-Hyprland%20%2B%20Quickshell-c8a57a" alt="Linux">
+</p>
+
+<p align="center"><a href="README.md">English</a> · <b>简体中文</b></p>
+
+<p align="center">
+  <img src="docs/demo-rope.gif" alt="截图一张张飞上绳子，再切换几种绳子主题">
+</p>
 
 ## 是什么
 
-系图把截图挂到一根绳子上，像晾衣绳挂照片。截图文件夹和剪贴板里新出现的截图会自动挂上，在绳子上可以直接复制、打开或取下。
+截图平时一截就沉进文件夹。系图把最近的几张留在眼前：截图文件夹或剪贴板里来了新图，它就落到屏幕顶边的一根绳子上，轻轻晃一晃，一直挂着，直到你把它取下。单击复制，双击打开，也能直接把照片拖进聊天窗口。
 
-下面的演示图由程序用占位图渲染（非真实截图）：
+Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + Quickshell 上，默认是右上角的抽屉，也可以切成同样的绳子。
 
-![抽屉展开](docs/demo-drawer.png)
+<p align="center">
+  <img src="docs/demo-drawer.gif" width="640" alt="Linux 抽屉模式：新截图占到大图的位置">
+</p>
 
-![抽屉拖入悬停](docs/demo-drawer-drop.png)
-
-![绳子模式](docs/demo-rope.png)
+系图最初移植自 macOS 上的 [Tendedero](https://github.com/alejandrobujan/tendedero)（MIT，见 `NOTICE`），有自己的名字和图标，不是 Tendedero。
 
 | 路径 | 内容 |
 |---|---|
@@ -41,6 +60,11 @@ Linux（Hyprland + Quickshell）：
 - 两种界面模式：`drawer`（右上角抽屉，默认）和 `rope`（顶边）。环境变量 `XITU_UI=drawer|rope` 优先于 `settings.json` 的 `ui` 字段。
 - 没有托盘菜单；展开、图库、退出用 `qs ipc`（见下）或由顶栏、按键绑定触发。
 - 拖动卡片换位置。绳子和卡片的颜色（主题）可通过 IPC 切换，不用重启。
+- 从浏览器或文件管理器把图片拖到屏幕顶边，抽屉会展开把它收进来。
+
+<p align="center">
+  <img src="docs/demo-drawer-drop.png" width="420" alt="把图片拖到抽屉上方">
+</p>
 
 ## Windows 构建与安装
 
