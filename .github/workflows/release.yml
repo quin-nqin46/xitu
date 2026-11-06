@@ -126,6 +126,8 @@ jobs:
       # 冒烟：解压后按 README 的步骤装进一个空的 HOME，装好的助手能跑、能找到内置主题
       - name: Smoke test install.sh
         run: |
+          # 跑器镜像里的 apt 索引可能过期（包已换版本 → 404），先更新
+          sudo apt-get update -q >/dev/null
           sudo apt-get install -y -q python3-pil >/dev/null
           work=$(mktemp -d)
           tar -C "$work" -xzf "dist/xitu-${VERSION}-linux.tar.gz"
