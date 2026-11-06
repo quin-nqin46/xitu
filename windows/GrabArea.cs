@@ -88,6 +88,7 @@ internal sealed class GrabSession
         menu.Items.Add(Item("打开图库", () => GalleryWindow.Launcher?.Invoke()));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("复制", Copy));
+        menu.Items.Add(Item("另存为…", SaveAs));
         menu.Items.Add(Item("打开", Open));
         menu.Items.Add(Item("用画图编辑", Edit));
         var favorite = Item("收藏", ToggleFavorite);
@@ -338,6 +339,34 @@ internal sealed class GrabSession
         catch (Exception ex)
         {
             Log.Error("收藏失败: " + ex.Message);
+        }
+    }
+
+    /// 另存一份到别处（同 Linux 版 xitu_helper.py save-as），图库里的原图不动。
+    private void SaveAs()
+    {
+        var src = _view.Item.Path;
+        try
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "另存为",
+                FileName = Path.GetFileName(src),
+                DefaultExt = ".png",
+                AddExtension = true,
+                Filter = "PNG 图片|*.png",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                OverwritePrompt = true,
+            };
+            if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.FileName)) return;
+            var dest = Path.GetFullPath(dialog.FileName);
+            if (string.Equals(dest, Path.GetFullPath(src), StringComparison.OrdinalIgnoreCase)) return;
+            File.Copy(src, dest, overwrite: true);
+            Log.Info("另存为 " + dest);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("另存为失败: " + ex.Message);
         }
     }
 
