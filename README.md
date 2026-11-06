@@ -43,7 +43,7 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 Both platforms:
 
 - Screenshots that appear in your screenshot folder or clipboard hang up on their own. Images copied in a browser ("Copy image") hang up too. Bitmaps copied together with table cells, text or files are ignored.
-- What hangs up on its own is set by `Collect` in `settings.json` (Settings › 自动挂上 on both; Linux opens Settings from the gallery's 设置… link, the rope's blank-area menu, or `qs ipc … call xitu settings`): `all` (default: screenshots and copied images), `screenshots` (no copied images), `own` (only screenshots Xitu took itself; the screenshot folder and clipboard are not watched. Linux has no built-in capture yet, so there `own` hangs up nothing on its own). Dragged-in images always hang up.
+- What hangs up on its own is set by `Collect` in `settings.json` (Settings › 自动挂上 on both; Linux opens Settings from the gallery's 设置… link, the rope's blank-area menu, or `qs ipc … call xitu settings`): `all` (default: screenshots and copied images), `screenshots` (no copied images), `own` (only screenshots Xitu took itself; the screenshot folder and clipboard are not watched). Dragged-in images always hang up.
 - Single click copies a photo, double click opens it. Hover and click the X to take it down; the file stays in the gallery.
 - A taken-down photo falls off; in rope mode photos sway gently and every so often a breeze passes.
 - A gallery window keeps everything that has been hung up.
@@ -129,7 +129,15 @@ Keyboard shortcuts and menu entries talk over IPC:
 qs ipc -p linux call xitu toggle
 ```
 
-Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `settings`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
+Built-in capture, like Windows Ctrl+Shift+A (needs `grim` and `slurp`; drag a region, click a window, or click a screen). Bind it in Hyprland:
+
+```
+bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture
+```
+
+The shot goes into the gallery, hangs on the rope and, unless `CopyToClipboard` is `false`, is copied too. Without grim/slurp a notification says to use your system screenshot key instead (shots saved to the screenshot folder still hang up).
+
+Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `settings`, `capture`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
 
 ## Caelestia integration (optional)
 

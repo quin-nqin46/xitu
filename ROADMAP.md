@@ -12,10 +12,10 @@
 - Linux 设置窗口：图库位置（可搬图）、保存时间、自动挂上、主题
 - Windows 单元测试（xunit）和主题预览图在 CI 上跑
 - Linux 编辑：长按或右键「编辑」，`$XITU_EDITOR` → satty / swappy → xdg-open，存盘后卡片刷新
+- Linux 自带截图：`ipc capture`（Hyprland 绑 Ctrl+Shift+A），slurp 框选 + grim；没装就提示改用系统截图键
 
 待做：
 
-- Linux 自带截图：grim + slurp，对应 Windows 的 Ctrl+Shift+A；没装就退回系统截图工具
 - 修顶部误触发：只在画出来的绳子上停留才展开，不再是整条顶边
 - 卡片右键「另存为」，两边一起做
 - 共用测试用例：`shared/` 下放 JSON 用例，xunit 和 pytest 都读，改了一边忘了另一边，检查会直接报错

@@ -300,6 +300,31 @@ Scope {
         }
     }
 
+    // ---- 自带截图：同 Windows Ctrl+Shift+A。快捷键由 Hyprland bind 调 ipc capture ----
+    function capture() {
+        if (captureProc.running) return;
+        captureProc.running = true;
+    }
+
+    Process {
+        id: captureProc
+        command: ["python3", root.helper, "capture"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var p = text.trim();
+                if (p !== "") root.hang(p, false);
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                var msg = text.trim();
+                if (msg === "") return;
+                root.log(msg);
+                Quickshell.execDetached(["notify-send", "-a", "系图", "系图截图", msg]);
+            }
+        }
+    }
+
     function importFile(file, source, fromFolder) {
         importJob.createObject(root, { file: file, source: source, fromFolder: !!fromFolder });
     }
@@ -541,6 +566,7 @@ Scope {
         function gallery(): void { root.openGallery(); }
         function closeGallery(): void { root.closeGallery(); }
         function settings(): void { root.openSettings(); }
+        function capture(): void { root.capture(); }
         function quit(): void { root.quitRequested(); }
         function setTheme(id: string): void { themeEngine.setTheme(id); }
         function themes(): string { return themeEngine.themes(); }
