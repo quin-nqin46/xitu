@@ -670,8 +670,74 @@ def test_capture_slurp_stdin(helper, library, monkeypatch, clients, want):
 
     monkeypatch.setattr(helper.subprocess, "run", run)
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/" + name)
+    monkeypatch.setenv("HYPRLAND_INSTANCE_SIGNATURE", "x")
+    monkeypatch.delenv("SWAYSOCK", raising=False)
     assert helper.cmd_capture() == 0
     assert fed == [want]
+
+
+SWAY_TREE = {
+    "type": "root", "nodes": [
+        {"type": "output", "name": "__i3", "nodes": [
+            {"type": "workspace", "nodes": [
+                {"type": "con", "name": "暂存", "visible": False, "rect": {"x": 0, "y": 0, "width": 9, "height": 9}, "nodes": []},
+            ]},
+        ]},
+        {"type": "output", "name": "HEADLESS-1", "nodes": [
+            {"type": "workspace", "name": "1", "nodes": [
+                {"type": "con", "layout": "splith", "nodes": [
+                    {"type": "con", "name": "foot  终端", "visible": True, "rect": {"x": 0, "y": 0, "width": 640, "height": 720}, "nodes": []},
+                    {"type": "con", "name": None, "app_id": "imv", "visible": True, "rect": {"x": 640, "y": 0, "width": 640, "height": 720}, "nodes": []},
+                ]},
+            ], "floating_nodes": [
+                {"type": "floating_con", "name": "浮动", "visible": True, "rect": {"x": 100, "y": 100, "width": 200, "height": 100}, "nodes": []},
+            ]},
+            {"type": "workspace", "name": "2", "nodes": [
+                {"type": "con", "name": "别的工作区", "visible": False, "rect": {"x": 0, "y": 0, "width": 1280, "height": 720}, "nodes": []},
+            ]},
+        ]},
+    ],
+}
+
+
+def test_sway_window_boxes(helper):
+    assert helper.sway_window_boxes(SWAY_TREE) == [
+        "0,0 640x720 foot 终端",
+        "640,0 640x720 imv",
+        "100,100 200x100 浮动",
+    ]
+    assert helper.sway_window_boxes({}) == []
+    assert helper.sway_window_boxes([]) == []
+
+
+@pytest.mark.parametrize("env, want", [
+    ({"HYPRLAND_INSTANCE_SIGNATURE": "x"}, "hyprctl"),
+    ({"SWAYSOCK": "/run/sway.sock"}, "swaymsg"),
+    ({}, None),   # niri、KDE 等：没有预设框，slurp 只拖框或选整块屏
+])
+def test_capture_boxes_by_desktop(helper, monkeypatch, env, want):
+    for k in ("HYPRLAND_INSTANCE_SIGNATURE", "SWAYSOCK"):
+        monkeypatch.delenv(k, raising=False)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    used = []
+
+    def run(cmd, **kw):
+        used.append(cmd[0])
+        if cmd[0] == "hyprctl":
+            data = [{"at": [1, 2], "size": [3, 4], "workspace": {"id": 1}, "title": "h"}] if cmd[-1] == "clients" \
+                else [{"activeWorkspace": {"id": 1}}]
+            return SimpleNamespace(returncode=0, stdout=json.dumps(data))
+        if cmd[0] == "swaymsg":
+            return SimpleNamespace(returncode=0, stdout=json.dumps(SWAY_TREE))
+        raise AssertionError(cmd)
+
+    monkeypatch.setattr(helper.subprocess, "run", run)
+    boxes = helper.capture_boxes(which=lambda name: "/usr/bin/" + name)
+    if want is None:
+        assert boxes == [] and used == []
+    else:
+        assert set(used) == {want} and boxes
 
 
 def test_capture_without_tools(helper, library, monkeypatch):

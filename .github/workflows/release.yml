@@ -126,6 +126,8 @@ jobs:
       # 冒烟：解压后按 README 的步骤装进一个空的 HOME，装好的助手能跑、能找到内置主题
       - name: Smoke test install.sh
         run: |
+          # 跑器镜像里的 apt 索引可能过期（包已换版本 → 404），先更新
+          sudo apt-get update -q >/dev/null
           sudo apt-get install -y -q python3-pil >/dev/null
           work=$(mktemp -d)
           tar -C "$work" -xzf "dist/xitu-${VERSION}-linux.tar.gz"
@@ -133,6 +135,8 @@ jobs:
           # 跑器上设了 XDG_CONFIG_HOME 等，指向真实 HOME；清掉才是一个全新用户
           unset XDG_CONFIG_HOME XDG_DATA_HOME
           mkdir -p "$HOME/.config/hypr" && echo "# test" > "$HOME/.config/hypr/hyprland.conf"
+          mkdir -p "$HOME/.config/sway" && echo "# test" > "$HOME/.config/sway/config"
+          mkdir -p "$HOME/.config/niri" && echo "binds {}" > "$HOME/.config/niri/config.kdl"
           cd "$work/xitu-${VERSION}"
           sh linux/install.sh --check || true
           sh linux/install.sh --yes
@@ -140,11 +144,20 @@ jobs:
           test -x "$HOME/.local/bin/xitu"
           grep -q "xitu start" "$HOME/.config/hypr/xitu.conf"
           grep -q "source = $HOME/.config/hypr/xitu.conf" "$HOME/.config/hypr/hyprland.conf"
+          grep -q "bindsym Ctrl+Shift+a exec $HOME/.local/bin/xitu capture" "$HOME/.config/sway/xitu.conf"
+          grep -q "include $HOME/.config/sway/xitu.conf" "$HOME/.config/sway/config"
+          grep -q "spawn-at-startup" "$HOME/.config/niri/xitu.kdl"
+          # KDE：写 XDG 自启
+          XDG_CURRENT_DESKTOP=KDE sh linux/install.sh --yes
+          grep -q "Exec=$HOME/.local/bin/xitu start" "$HOME/.config/autostart/xitu.desktop"
           python3 "$app/linux/xitu_helper.py" theme-list | grep -q polaroid-blue
           python3 "$app/linux/xitu_helper.py" check-deps || true
           sh linux/install.sh --uninstall
           test ! -e "$app"
           if grep -q xitu.conf "$HOME/.config/hypr/hyprland.conf"; then echo "卸载没去掉 source 行"; exit 1; fi
+          if grep -q xitu.conf "$HOME/.config/sway/config"; then echo "卸载没去掉 include 行"; exit 1; fi
+          test ! -e "$HOME/.config/autostart/xitu.desktop"
+          test ! -e "$HOME/.config/sway/xitu.conf"
 
       - uses: actions/upload-artifact@v4
         with:

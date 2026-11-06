@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import "layout.js" as L
 
 // 一块屏上的抽屉（drawer 界面）。从顶边右上角「长出来」：
@@ -49,18 +48,8 @@ PanelWindow {
     property bool dropHold: false      // 刚拖入，先别收，让新图入场动画播完
 
     // ---- 展开 / 收起 ----
-    // 真全屏（Hyprland 模式 2，看视频、玩游戏）不展开，判断和 RopeWindow 相同。
-    function fullscreenHere() {
-        var mon = Hyprland.monitorFor(win.modelData);
-        var ws = mon ? mon.activeWorkspace : null;
-        if (!ws || !ws.hasFullscreen) return false;
-        var tops = ws.toplevels ? ws.toplevels.values : [];
-        for (var i = 0; i < tops.length; i++) {
-            var o = tops[i].lastIpcObject;
-            if (o && o.fullscreen === 2) return true;
-        }
-        return false;
-    }
+    // 真全屏（看视频、玩游戏）不展开，判断和 RopeWindow 相同。
+    function fullscreenHere() { return shell.desktop.fullscreenOn(win.modelData); }
 
     property bool pendingPin: false
     Timer {
@@ -70,11 +59,9 @@ PanelWindow {
     }
 
     function reveal(pin) {
-        var mon = Hyprland.monitorFor(win.modelData);
-        var ws = mon ? mon.activeWorkspace : null;
-        if (ws && ws.hasFullscreen && !revealed) {
+        if (!revealed && shell.desktop.maybeFullscreen(win.modelData)) {
             pendingPin = !!pin;
-            Hyprland.refreshToplevels();
+            shell.desktop.refresh();
             fullscreenCheck.restart();
             return;
         }

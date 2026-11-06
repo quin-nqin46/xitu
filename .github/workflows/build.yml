@@ -98,7 +98,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed quickshell sway grim slurp wl-clipboard \
             inotify-tools python python-pillow wqy-microhei ttf-dejavu git libcap \
-            swaybg adwaita-cursors mesa
+            swaybg adwaita-cursors mesa foot
           # Arch 的 sway 带 cap_sys_nice 文件能力，容器里 exec 会被拒（EPERM），去掉
           setcap -r /usr/bin/sway || true
           qs --version || true
@@ -131,4 +131,37 @@ jobs:
         with:
           name: linux-ui-shots
           path: ui-shots/
+          retention-days: 14
+
+  # Sway 之外的桌面：niri（嵌在无头 Sway 里）和 KDE 的 KWin（--virtual 无头）
+  linux-desktops:
+    name: Linux UI (${{ matrix.desktop }})
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        desktop: [niri, kwin]
+    steps:
+      - name: Install packages
+        run: |
+          common="quickshell foot wl-clipboard inotify-tools python python-pillow wqy-microhei ttf-dejavu mesa adwaita-cursors libcap grim"
+          if [ "${{ matrix.desktop }}" = niri ]; then extra="niri sway swaybg"; else extra="kwin dbus"; fi
+          pacman -Syu --noconfirm --needed $common $extra
+          # 同 linux-ui：Arch 的 sway / kwin 带文件能力，容器里 exec 会被拒
+          setcap -r /usr/bin/sway 2>/dev/null || true
+          setcap -r /usr/bin/kwin_wayland 2>/dev/null || true
+          qs --version || true
+
+      - uses: actions/checkout@v4
+
+      - name: Drive the UI
+        run: python linux/tests/ui/desktops.py ${{ matrix.desktop }} --out ui-desktop-${{ matrix.desktop }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-ui-${{ matrix.desktop }}
+          path: ui-desktop-${{ matrix.desktop }}/
           retention-days: 14

@@ -2,10 +2,12 @@
 # 系图 Linux 版安装脚本。在仓库或发布包的根目录运行：sh linux/install.sh
 #
 #   sh linux/install.sh            检查依赖，装到 ~/.local/share/Xitu/app，装命令 ~/.local/bin/xitu，
-#                                  写 ~/.config/hypr/xitu.conf（开机自启 + Ctrl+Shift+A 截图），问要不要接进 hyprland.conf
-#   sh linux/install.sh --yes      不问，直接接进 hyprland.conf 并启动
+#                                  按桌面写开机自启和 Ctrl+Shift+A 截图：
+#                                    Hyprland ~/.config/hypr/xitu.conf、Sway ~/.config/sway/xitu.conf（问要不要接进主配置），
+#                                    niri 打印要加进 config.kdl 的几行，KDE 写 ~/.config/autostart/xitu.desktop 并说明怎么设快捷键
+#   sh linux/install.sh --yes      不问，直接接进 hyprland.conf / sway config 并启动
 #   sh linux/install.sh --check    只检查依赖，打印安装命令
-#   sh linux/install.sh --uninstall  删掉程序、命令和 xitu.conf（图库、设置、绳上条目都留着）
+#   sh linux/install.sh --uninstall  删掉程序、命令和上面写的配置（图库、设置、绳上条目都留着）
 #
 # 不会用 sudo 装任何东西：缺的包只打印安装命令，由你自己运行。
 set -eu
@@ -14,9 +16,15 @@ SRC=$(cd "$(dirname "$0")/.." && pwd)
 DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 APP="$DATA_HOME/Xitu/app"
 BIN="$HOME/.local/bin"
-HYPR_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/hypr
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+HYPR_DIR="$CONFIG/hypr"
 HYPR_CONF="$HYPR_DIR/hyprland.conf"
 XITU_CONF="$HYPR_DIR/xitu.conf"
+SWAY_DIR="$CONFIG/sway"
+SWAY_CONF="$SWAY_DIR/config"
+SWAY_XITU="$SWAY_DIR/xitu.conf"
+NIRI_DIR="$CONFIG/niri"
+AUTOSTART="$CONFIG/autostart/xitu.desktop"
 
 mode=install
 yes=0
@@ -25,13 +33,33 @@ for a in "$@"; do
         --check) mode=check ;;
         --uninstall) mode=uninstall ;;
         --yes|-y) yes=1 ;;
-        -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,13p' "$0"| sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "不认识的参数：$a（--help 看用法）" >&2; exit 2 ;;
     esac
 done
 
 say() { printf '%s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# ---- 当前桌面 ----
+# 完整支持 Hyprland、Sway、niri（以及别的支持 wlr-foreign-toplevel 的 wlroots 系合成器）；
+# KDE 部分支持（快捷键在鼠标最近停过的屏上放下绳子，不判断全屏）；GNOME 和 X11 不支持。
+desktop=other
+cur=$(printf '%s' "${XDG_CURRENT_DESKTOP:-}:${XDG_SESSION_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then desktop=hyprland
+elif [ -n "${SWAYSOCK:-}" ]; then desktop=sway
+elif [ -n "${NIRI_SOCKET:-}" ]; then desktop=niri
+else
+    case "$cur" in
+        *hyprland*) desktop=hyprland ;;
+        *sway*) desktop=sway ;;
+        *niri*) desktop=niri ;;
+        *kde*|*plasma*) desktop=kde ;;
+        *gnome*|*ubuntu*|*unity*|*pantheon*|*budgie*|*cinnamon*) desktop=gnome ;;
+    esac
+fi
+x11=0
+[ "${XDG_SESSION_TYPE:-}" = x11 ] && [ -z "${WAYLAND_DISPLAY:-}" ] && x11=1
 
 # ---- 发行版和包名 ----
 distro=other
@@ -112,10 +140,17 @@ check_deps() {
     check_one slurp 0 "自带截图框选"
     check_one xdg-user-dir 0 "找「图片」文件夹"
     check_one notify-send 0 "缺东西时弹通知"
-    if have hyprctl || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
-        say "  ✓ Hyprland"
+    if [ $x11 = 1 ]; then
+        say "  ! 现在是 X11 会话。系图只能在 Wayland 下运行（Hyprland、Sway、niri、KDE Plasma）。"
     else
-        say "  ! 没检测到 Hyprland。系图目前只在 Hyprland 上完整支持（多屏和全屏判断走 Hyprland）。"
+        case "$desktop" in
+            hyprland) say "  ✓ 桌面：Hyprland" ;;
+            sway) say "  ✓ 桌面：Sway" ;;
+            niri) say "  ✓ 桌面：niri" ;;
+            kde) say "  ✓ 桌面：KDE Plasma（部分支持：快捷键在鼠标最近停过的屏上放下绳子；全屏时也会放下）" ;;
+            gnome) say "  ! 桌面：GNOME 系。GNOME 不支持系图要用的 layer-shell 和剪贴板监听，系图在这里跑不起来。" ;;
+            *) say "  ? 没认出桌面。支持 layer-shell 的 Wayland 合成器一般能用；多屏和全屏判断要合成器支持 wlr-foreign-toplevel。" ;;
+        esac
     fi
     # wl-paste 和 wl-copy 同一个包，去重
     # shellcheck disable=SC2086
@@ -166,10 +201,18 @@ if [ $mode = uninstall ]; then
     fi
     rm -rf "$APP"
     [ -f "$BIN/xitu" ] && grep -q 'Xitu/app' "$BIN/xitu" && rm -f "$BIN/xitu"
-    rm -f "$XITU_CONF"
+    rm -f "$XITU_CONF" "$SWAY_XITU" "$NIRI_DIR/xitu.kdl"
+    if [ -f "$AUTOSTART" ] && grep -q 'xitu start' "$AUTOSTART"; then rm -f "$AUTOSTART"; fi
     if [ -f "$HYPR_CONF" ] && grep -q 'xitu.conf' "$HYPR_CONF"; then
         sed -i -e '/xitu\.conf/d' -e '/^# 系图$/d' "$HYPR_CONF"
         say "已从 hyprland.conf 去掉 source xitu.conf 那一行。"
+    fi
+    if [ -f "$SWAY_CONF" ] && grep -q 'xitu.conf' "$SWAY_CONF"; then
+        sed -i -e '/xitu\.conf/d' -e '/^# 系图$/d' "$SWAY_CONF"
+        say "已从 Sway 的 config 去掉 include xitu.conf 那一行。"
+    fi
+    if [ -f "$NIRI_DIR/config.kdl" ] && grep -q 'xitu' "$NIRI_DIR/config.kdl"; then
+        say "niri 的 config.kdl 里还有系图的几行（spawn-at-startup 和 Ctrl+Shift+A），请自己删掉。"
     fi
     say "系图已卸载。图库（图片/系图）、设置和日志（$DATA_HOME/Xitu）都还在，不要了可以自己删。"
     exit 0
@@ -208,7 +251,7 @@ mkdir -p "$BIN"
 cat > "$BIN/xitu" <<EOF
 #!/bin/sh
 # 系图启动器（install.sh 生成）。
-#   xitu start   启动（Hyprland 开机自启用这个）
+#   xitu start   启动（开机自启用这个）
 #   xitu         已经在跑就放下 / 收起绳子，没在跑就启动
 #   xitu capture | toggle | gallery | settings | clear | quit ...   发给正在跑的系图（qs ipc call xitu ...）
 APP="$APP/linux"
@@ -221,41 +264,103 @@ exec qs ipc -p "\$APP" call xitu "\$@"
 EOF
 chmod +x "$BIN/xitu"
 say "命令装到了 $BIN/xitu"
-case ":$PATH:" in *":$BIN:"*) ;; *) say "（$BIN 不在 PATH 里；Hyprland 配置里用的是完整路径，不受影响）" ;; esac
+case ":$PATH:" in *":$BIN:"*) ;; *) say "（$BIN 不在 PATH 里；桌面配置里用的是完整路径，不受影响）" ;; esac
+
+ask() {  # 提示 → 0 = 同意。--yes 时直接同意，不在终端里时不同意
+    [ $yes = 1 ] && return 0
+    [ -t 0 ] || return 1
+    printf '%s [Y/n] ' "$1"
+    read -r answer || return 1
+    case "${answer:-y}" in y|Y|yes) return 0 ;; *) return 1 ;; esac
+}
+
+hook_into() {  # 主配置 要加的一行 桌面名：往主配置末尾接一行（已经接过就不动）
+    if [ ! -f "$1" ]; then
+        say "没找到 $1。要开机自启和快捷键，在你的 $3 配置里加一行：$2"
+    elif grep -q 'xitu.conf' "$1"; then
+        say "$3 的配置里已经接上了 xitu.conf。"
+    elif ask "要在 $1 末尾加一行 $2 吗？"; then
+        printf '\n# 系图\n%s\n' "$2" >> "$1"
+        say "已加上。"
+    else
+        say "没改 $1。要开机自启和快捷键，就自己在里面加一行：$2"
+    fi
+}
+
+# ---- 各桌面的开机自启和 Ctrl+Shift+A ----
+# 当前桌面一定写；别的桌面有配置文件夹也写上，换桌面登录时也能用。
 
 # Hyprland：单独一个文件，hyprland.conf 里 source 它，卸载时好删
-mkdir -p "$HYPR_DIR"
-cat > "$XITU_CONF" <<EOF
+if [ $desktop = hyprland ] || [ -d "$HYPR_DIR" ]; then
+    mkdir -p "$HYPR_DIR"
+    cat > "$XITU_CONF" <<EOF
 # 系图（install.sh 生成，重新安装会覆盖；要改快捷键就改这里或在 hyprland.conf 里另绑）
 exec-once = $BIN/xitu start
 bind = CTRL SHIFT, A, exec, $BIN/xitu capture
 EOF
-say "Hyprland 配置写到了 $XITU_CONF（开机自启，Ctrl+Shift+A 截图）"
-
-if [ -f "$HYPR_CONF" ] && grep -q 'xitu.conf' "$HYPR_CONF"; then
-    say "hyprland.conf 里已经 source 了 xitu.conf。"
-elif [ -f "$HYPR_CONF" ]; then
-    answer=n
-    if [ $yes = 1 ]; then
-        answer=y
-    elif [ -t 0 ]; then
-        printf '要在 %s 末尾加一行 source = %s 吗？[Y/n] ' "$HYPR_CONF" "$XITU_CONF"
-        read -r answer || answer=n
-        [ -z "$answer" ] && answer=y
-    fi
-    case "$answer" in
-        y|Y|yes)
-            printf '\n# 系图\nsource = %s\n' "$XITU_CONF" >> "$HYPR_CONF"
-            say "已加上。" ;;
-        *)
-            say "没改 hyprland.conf。要自启和快捷键，就自己在里面加一行：source = $XITU_CONF" ;;
-    esac
-else
-    say "没找到 $HYPR_CONF。用 Hyprland 的话，在你的配置里加一行：source = $XITU_CONF"
+    say "Hyprland 配置写到了 $XITU_CONF（开机自启，Ctrl+Shift+A 截图）"
+    hook_into "$HYPR_CONF" "source = $XITU_CONF" Hyprland
 fi
 
-# 在 Hyprland 里装的就顺手启动（Hyprland 重新加载配置时不会再跑 exec-once）
-if [ $deps_ok = 1 ] && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && have qs; then
+# Sway：同样单独一个文件，config 里 include 它
+if [ $desktop = sway ] || [ -d "$SWAY_DIR" ]; then
+    mkdir -p "$SWAY_DIR"
+    cat > "$SWAY_XITU" <<EOF
+# 系图（install.sh 生成，重新安装会覆盖；要改快捷键就改这里或在 config 里另绑）
+exec $BIN/xitu start
+bindsym Ctrl+Shift+a exec $BIN/xitu capture
+EOF
+    say "Sway 配置写到了 $SWAY_XITU（开机自启，Ctrl+Shift+A 截图）"
+    if [ ! -f "$SWAY_CONF" ] && [ -f /etc/sway/config ]; then
+        say "你还在用系统默认的 /etc/sway/config。先 cp /etc/sway/config $SWAY_CONF，再在末尾加一行：include $SWAY_XITU"
+    else
+        hook_into "$SWAY_CONF" "include $SWAY_XITU" Sway
+    fi
+fi
+
+# niri：KDL 配置不好自动改，写一份片段并打印出来，由你加进 config.kdl
+if [ $desktop = niri ] || [ -d "$NIRI_DIR" ]; then
+    mkdir -p "$NIRI_DIR"
+    cat > "$NIRI_DIR/xitu.kdl" <<EOF
+// 系图（install.sh 生成）。把下面的内容加进 config.kdl：
+// spawn-at-startup 放在最外层，Ctrl+Shift+A 那行放进已有的 binds { } 里。
+spawn-at-startup "$BIN/xitu" "start"
+binds {
+    Ctrl+Shift+A { spawn "$BIN/xitu" "capture"; }
+}
+EOF
+    if [ -f "$NIRI_DIR/config.kdl" ] && grep -q 'xitu' "$NIRI_DIR/config.kdl"; then
+        say "niri 的 config.kdl 里已经有系图了。"
+    else
+        say "niri：把下面两处加进 $NIRI_DIR/config.kdl（也存在了 $NIRI_DIR/xitu.kdl）："
+        say "  最外层：spawn-at-startup \"$BIN/xitu\" \"start\""
+        say "  binds { } 里：Ctrl+Shift+A { spawn \"$BIN/xitu\" \"capture\"; }"
+    fi
+fi
+
+# KDE 和没认出的桌面：XDG 自启文件；快捷键要在桌面自己的设置里加
+if [ $desktop = kde ] || [ $desktop = other ]; then
+    mkdir -p "$(dirname "$AUTOSTART")"
+    cat > "$AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=系图
+Comment=截图挂在屏幕顶边的绳子上（install.sh 生成）
+Exec=$BIN/xitu start
+NoDisplay=true
+EOF
+    say "开机自启写到了 $AUTOSTART"
+    if [ $desktop = kde ]; then
+        say "截图快捷键：系统设置 › 键盘 › 快捷键 › 添加新的 › 命令或脚本，命令填 $BIN/xitu capture，按键设 Ctrl+Shift+A。"
+    else
+        say "截图快捷键：在你的桌面设置里把 Ctrl+Shift+A 绑到命令 $BIN/xitu capture。"
+    fi
+fi
+
+# 在能跑的 Wayland 桌面里装的就顺手启动（重新加载配置不会再跑开机自启那一行）
+can_start=0
+if [ -n "${WAYLAND_DISPLAY:-}" ] && [ $desktop != gnome ]; then can_start=1; fi
+if [ $deps_ok = 1 ] && [ $can_start = 1 ] && have qs; then
     if qs ipc -p "$APP/linux" call xitu themes >/dev/null 2>&1; then
         say "系图已经在运行；要用新装的版本，先 xitu quit 再 xitu。"
     else
@@ -264,7 +369,9 @@ if [ $deps_ok = 1 ] && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && have qs; the
     fi
 elif [ $deps_ok = 0 ]; then
     say ""
-    say "先把上面缺的必需包装上，再运行 xitu（或重新登录 Hyprland）。"
+    say "先把上面缺的必需包装上，再运行 xitu（或重新登录）。"
+elif [ $desktop = gnome ] || [ $x11 = 1 ]; then
+    say "装好了，但当前桌面跑不了系图；换到 Hyprland、Sway、niri 或 KDE Plasma（Wayland）登录后会自动启动。"
 else
-    say "运行 xitu 启动，或重新登录 Hyprland。"
+    say "运行 xitu 启动，或重新登录。"
 fi

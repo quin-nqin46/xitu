@@ -33,8 +33,26 @@ v0.1 的项目都做完了。
 
 ## v0.3 Linux 跨桌面
 
+已完成：
+
 - 完整支持 Hyprland、Sway、niri，KDE 部分支持；GNOME 和 X11 不支持
-- 需要在这些桌面上实测，所以放在发布之后
+- 聚焦屏和全屏判断抽到 `linux/Desktop.qml`：Hyprland / Sway（I3）/ wlr-foreign-toplevel / 鼠标最近停过的屏
+- 自带截图点窗口：Hyprland 和 Sway 都有预设窗口框
+- 安装脚本按桌面写自启和 Ctrl+Shift+A：Hyprland、Sway 自动接进配置，niri 打印要加的两行，KDE 写 XDG 自启并说明快捷键
+
+CI 上验证过的（`.github/workflows/build.yml`）：
+
+- Sway（无头）：整套界面测试，加上「全屏时不放下绳子」「两块屏时在聚焦的那块放下」
+- niri（嵌在无头 Sway 里）：启动、放下绳子、全屏时不放下、图库
+- KDE 的 KWin（`kwin_wayland --virtual`，两块虚拟屏）：启动、放下绳子、图库，没有 QML 报错；全屏时会放下（已知限制）
+- 安装脚本：Hyprland、Sway、niri、KDE 的配置写入与卸载（Release 冒烟测试）
+
+未验证（CI 做不到）：
+
+- Hyprland 上的跨桌面改动：Hyprland 要显卡的渲染节点（/dev/dri），GitHub 的跑器没有，起不来（试过嵌在无头 Sway 里）。逻辑沿用 v0.2 的 Hyprland 代码，只是挪进了 `DesktopHyprland.qml`
+- niri 多屏时的聚焦屏判断（嵌套运行只有一块屏）
+- KDE 上的剪贴板监听、拖放和自带截图（KWin 不支持 wlr-screencopy，截不了图）
+- 真机上的开机自启和 Ctrl+Shift+A 绑定
 
 ## 以后再看
 

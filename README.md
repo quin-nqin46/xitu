@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-b5302a" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/Windows-.NET%208%20%2F%20WPF-2e3440" alt="Windows">
-  <img src="https://img.shields.io/badge/Linux-Hyprland%20%2B%20Quickshell-c8a57a" alt="Linux">
+  <img src="https://img.shields.io/badge/Linux-Wayland%20%2B%20Quickshell-c8a57a" alt="Linux">
 </p>
 
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
@@ -25,7 +25,7 @@
 
 Screenshots usually vanish into a folder. Xitu keeps the last few in sight: anything that lands in your screenshot folder or clipboard drops onto a rope along the top edge of the screen, sways for a moment, and stays there until you take it down. Click to copy, double-click to open, drag a photo straight into a chat window.
 
-On Windows it is a tray app with one rope per screen. On Linux it runs on Hyprland with Quickshell, with the same rope along the top edge.
+On Windows it is a tray app with one rope per screen. On Linux it runs on Wayland desktops (Hyprland, Sway, niri, KDE Plasma) with Quickshell, with the same rope along the top edge.
 
 
 Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendedero) for macOS (MIT, see `NOTICE`). It has its own name and icon and is not Tendedero.
@@ -50,7 +50,7 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 
 Capture with Ctrl+Shift+A. If another app (WeChat, QQ, …) already owns that key, Xitu says so; pick another key in Settings › Hotkeys.
 
-### Linux (Hyprland)
+### Linux (Hyprland, Sway, niri, KDE Plasma)
 
 1. Download `xitu-<version>-linux.tar.gz` from [Releases](https://github.com/quin-nqin46/xitu/releases/latest) and extract it, or `git clone` this repository.
 2. From the extracted folder (or the repository root) run:
@@ -59,14 +59,24 @@ Capture with Ctrl+Shift+A. If another app (WeChat, QQ, …) already owns that ke
    sh linux/install.sh
    ```
 
-   The script checks dependencies and prints the install command for your distro when something is missing (it never runs sudo itself); copies the app to `~/.local/share/Xitu/app` and a `xitu` command to `~/.local/bin/xitu`; writes `~/.config/hypr/xitu.conf` (start at login, Ctrl+Shift+A to capture) and asks before adding a `source` line for it to `hyprland.conf`. Run inside Hyprland, it starts Xitu right away.
+   The script checks dependencies and prints the install command for your distro when something is missing (it never runs sudo itself); copies the app to `~/.local/share/Xitu/app` and a `xitu` command to `~/.local/bin/xitu`; then sets up start at login and Ctrl+Shift+A capture for your desktop: on Hyprland it writes `~/.config/hypr/xitu.conf` and asks before adding a `source` line to `hyprland.conf`; on Sway it writes `~/.config/sway/xitu.conf` and asks before adding an `include` line to `config`; on niri it prints the two lines to add to `config.kdl` (also saved as `~/.config/niri/xitu.kdl`); on KDE it writes `~/.config/autostart/xitu.desktop` and tells you where to add the shortcut. Run inside one of these desktops, it starts Xitu right away.
 3. After installing any missing packages, run `xitu start` (or log in again).
 
 Required packages: quickshell, python3 with Pillow, wl-clipboard, inotify-tools, xdg-utils, gio (glib2). Optional: grim and slurp (built-in capture), xdg-user-dirs, libnotify (notifications about missing packages), zenity or kdialog (Save As, folder picker), satty or swappy (editing). `sh linux/install.sh --check` only checks. At startup Xitu also shows a notification if a required package is missing.
 
 Everyday commands: `xitu` (show or hide the rope), `xitu capture`, `xitu gallery`, `xitu settings`, `xitu quit`. Uninstall with `sh linux/install.sh --uninstall`; the gallery and settings are kept.
 
-If something else in `hyprland.conf` is already bound to Ctrl+Shift+A, both will fire; edit the `bind` line in `~/.config/hypr/xitu.conf`. Only Hyprland is fully supported for now; GNOME and X11 are not supported.
+If something else is already bound to Ctrl+Shift+A, both will fire; edit the binding line in `xitu.conf`.
+
+Desktop support:
+
+| Desktop | Support | Notes |
+|---|---|---|
+| Hyprland | full | |
+| Sway | full | clicking a window while capturing grabs that window, as on Hyprland |
+| niri, river and other wlroots compositors | full | focus and fullscreen tracking via wlr-foreign-toplevel; capture is drag or whole screen only |
+| KDE Plasma (Wayland) | partial | the shortcut drops the rope on the screen the pointer last touched; touching the top edge over a fullscreen video still drops it |
+| GNOME, any X11 session | not supported | no layer-shell or clipboard watching |
 
 ## Features
 
@@ -85,7 +95,7 @@ Windows:
 - Rope themes: tray menu › 换主题. Same theme files as Linux (`shared/themes/`); the default is the blue rope with polaroid frames, the old red rope is still there as 红绳. Custom themes go in `%LOCALAPPDATA%\Xitu\themes\<id>.json`.
 - Press and hold to edit in Paint. Dragging a photo off the line only copies it; the photo stays on the rope.
 
-Linux (Hyprland + Quickshell):
+Linux (Wayland + Quickshell):
 
 - Settings window (library location with optional move, retention and 立即清理过期, 自动挂上, theme) matches the Windows one. The folder picker uses `zenity` or `kdialog` if installed; otherwise type the path.
 - No tray menu; expand, gallery and quit are triggered with `qs ipc` (see below) or from your bar or key bindings.
@@ -136,7 +146,7 @@ Runtime files (source: `windows/AppPaths.cs`):
 Dependencies — only what the code actually calls:
 
 - Quickshell (`qs`): shell runtime. The repository does not pin a version.
-- Hyprland: per-screen windows and focus tracking go through Quickshell's Hyprland integration.
+- A Wayland compositor with layer-shell. Focus and fullscreen tracking live in `linux/Desktop.qml`: Quickshell's Hyprland integration on Hyprland, its I3 integration on Sway, wlr-foreign-toplevel elsewhere, and the screen the pointer last touched when none of those is available.
 - Python 3 with Pillow: file and clipboard helper (`linux/xitu_helper.py`).
 - wl-clipboard: `wl-paste` (clipboard watch) and `wl-copy` (single-click copy).
 - inotify-tools: `inotifywait` (screenshot folder watch).
@@ -162,7 +172,7 @@ Keyboard shortcuts and menu entries talk over IPC:
 qs ipc -p linux call xitu toggle
 ```
 
-Built-in capture, like Windows Ctrl+Shift+A (needs `grim` and `slurp`; drag a region, click a window, or click a screen). Bind it in Hyprland:
+Built-in capture, like Windows Ctrl+Shift+A (needs `grim` and `slurp`; drag a region, click a window, or click a screen). Bind it in Hyprland (on Sway: `bindsym Ctrl+Shift+a exec …`):
 
 ```
 bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture
