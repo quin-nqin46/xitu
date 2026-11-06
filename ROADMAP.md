@@ -12,7 +12,7 @@
 - Linux 设置窗口：图库位置（可搬图）、保存时间、自动挂上、主题
 - Windows 单元测试（xunit）和主题预览图在 CI 上跑
 - Linux 编辑：长按或右键「编辑」，`$XITU_EDITOR` → satty / swappy → xdg-open，存盘后卡片刷新
-- Linux 自带截图：`ipc capture`（Hyprland 绑 Ctrl+Shift+A），slurp 框选 + grim；没装就提示改用系统截图键
+- Linux 自带截图：`ipc capture`（Hyprland 绑 Ctrl+Shift+A），slurp 框选 + grim；没装就提示改用系统截图键；截完从框选处飞上绳子，同 Windows
 - 修顶部误触发：只有顶边中间挂照片的那一段感应，两角和标签页、标题栏不再触发（Windows 窄带从 20 降到 4 DIP）
 - 卡片右键「另存为…」，两边都有
 - 共用测试用例：`shared/tests/*.json`（剪贴板规则、绳子容量、顶边感应段、保存时间文字），xunit 和 pytest 都跑；CI 上 Linux 也跑 pytest

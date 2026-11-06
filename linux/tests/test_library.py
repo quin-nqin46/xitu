@@ -553,10 +553,21 @@ def test_capture_imports_and_copies(helper, library, monkeypatch, capsys):
     copied = []
     monkeypatch.setattr(helper, "cmd_copy", lambda p: copied.append(p))
     assert helper.cmd_capture() == 0
-    out = capsys.readouterr().out.strip()
-    assert out.startswith(str(library.resolve())) and "/截图_" in out
+    out = json.loads(capsys.readouterr().out)
+    assert out["path"].startswith(str(library.resolve())) and "/截图_" in out["path"]
+    assert (out["x"], out["y"], out["w"], out["h"]) == (10, 20, 30, 40)
     assert ["grim", "-g", "10,20 30x40", "-"] in calls
-    assert copied == [out]
+    assert copied == [out["path"]]
+
+
+@pytest.mark.parametrize("geom, box", [
+    ("10,20 30x40", {"x": 10, "y": 20, "w": 30, "h": 40}),
+    ("-1920,0 1920x1080", {"x": -1920, "y": 0, "w": 1920, "h": 1080}),
+    ("", None),
+    ("nope", None),
+])
+def test_parse_geometry(helper, geom, box):
+    assert helper.parse_geometry(geom) == box
 
 
 def test_capture_respects_copy_setting(helper, library, monkeypatch, capsys):
