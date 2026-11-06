@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-b5302a" alt="MIT 许可"></a>
   <img src="https://img.shields.io/badge/Windows-.NET%208%20%2F%20WPF-2e3440" alt="Windows">
-  <img src="https://img.shields.io/badge/Linux-Hyprland%20%2B%20Quickshell-c8a57a" alt="Linux">
+  <img src="https://img.shields.io/badge/Linux-Wayland%20%2B%20Quickshell-c8a57a" alt="Linux">
 </p>
 
 <p align="center"><a href="README.md">English</a> · <b>简体中文</b></p>
@@ -25,7 +25,7 @@
 
 截图平时一截就沉进文件夹。系图把最近的几张留在眼前：截图文件夹或剪贴板里来了新图，它就落到屏幕顶边的一根绳子上，轻轻晃一晃，一直挂着，直到你把它取下。单击复制，双击打开，也能直接把照片拖进聊天窗口。
 
-Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + Quickshell 上，同样是顶边的一根绳子。
+Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Wayland 桌面（Hyprland、Sway、niri、KDE Plasma）+ Quickshell 上，同样是顶边的一根绳子。
 
 
 系图最初移植自 macOS 上的 [Tendedero](https://github.com/alejandrobujan/tendedero)（MIT，见 `NOTICE`），有自己的名字和图标，不是 Tendedero。
@@ -50,7 +50,7 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 
 截图按 Ctrl+Shift+A。这个键被微信、QQ 等占用时会弹提示，到 设置 › 快捷键 里换一个。
 
-### Linux（Hyprland）
+### Linux（Hyprland、Sway、niri、KDE Plasma）
 
 1. 到 [Releases](https://github.com/quin-nqin46/xitu/releases/latest) 下载 `xitu-<版本>-linux.tar.gz` 并解压，或者 `git clone` 本仓库。
 2. 在解压出来的目录（或仓库根目录）里运行：
@@ -59,14 +59,24 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
    sh linux/install.sh
    ```
 
-   脚本会检查依赖，缺什么就按你的发行版打印安装命令（不会自己用 sudo 装）；把程序装到 `~/.local/share/Xitu/app`，命令装到 `~/.local/bin/xitu`；写一份 `~/.config/hypr/xitu.conf`（登录时自启，Ctrl+Shift+A 截图），并问要不要在 `hyprland.conf` 末尾加一行 `source` 它。在 Hyprland 里运行时，装完直接启动。
+   脚本会检查依赖，缺什么就按你的发行版打印安装命令（不会自己用 sudo 装）；把程序装到 `~/.local/share/Xitu/app`，命令装到 `~/.local/bin/xitu`；再按你用的桌面设好登录时自启和 Ctrl+Shift+A 截图：Hyprland 写 `~/.config/hypr/xitu.conf` 并问要不要在 `hyprland.conf` 末尾 `source` 它；Sway 写 `~/.config/sway/xitu.conf` 并问要不要在 `config` 末尾 `include` 它；niri 打印要加进 `config.kdl` 的两行（也存在 `~/.config/niri/xitu.kdl`）；KDE 写 `~/.config/autostart/xitu.desktop`，快捷键按提示在系统设置里加。在这些桌面里运行时，装完直接启动。
 3. 缺的包装好以后，运行 `xitu start`（或重新登录）。
 
 需要的包：quickshell、python3 和 Pillow、wl-clipboard、inotify-tools、xdg-utils、gio（glib2）。可选：grim 和 slurp（自带截图）、xdg-user-dirs、libnotify（缺东西时弹通知）、zenity 或 kdialog（另存为、选文件夹）、satty 或 swappy（编辑）。`sh linux/install.sh --check` 只检查、不安装。系图运行时如果发现缺了必需的包，会弹一条通知。
 
 常用命令：`xitu`（放下或收起绳子）、`xitu capture`、`xitu gallery`、`xitu settings`、`xitu quit`。卸载：`sh linux/install.sh --uninstall`，图库和设置会留着。
 
-如果 `hyprland.conf` 里已经有别的程序绑了 Ctrl+Shift+A，两个都会触发；改 `~/.config/hypr/xitu.conf` 里的 `bind` 那行即可。目前只完整支持 Hyprland；GNOME 和 X11 不支持。
+如果已经有别的程序绑了 Ctrl+Shift+A，两个都会触发；改 `xitu.conf` 里绑定的那行即可。
+
+各桌面的支持程度：
+
+| 桌面 | 支持 | 说明 |
+|---|---|---|
+| Hyprland | 完整 | |
+| Sway | 完整 | 截图时点一下窗口就截那个窗口，同 Hyprland |
+| niri、river 等 wlroots 系 | 完整 | 聚焦屏和全屏判断靠 wlr-foreign-toplevel；截图只能拖框或选整块屏 |
+| KDE Plasma（Wayland） | 部分 | 快捷键在鼠标最近停过的那块屏上放下绳子；全屏看视频时碰顶边也会放下 |
+| GNOME、任何 X11 会话 | 不支持 | 缺系图要用的 layer-shell 和剪贴板监听 |
 
 ## 功能
 
@@ -85,7 +95,7 @@ Windows：
 - 绳子主题：托盘菜单 › 换主题。和 Linux 用同一份主题文件（`shared/themes/`），默认是蓝绳 + 拍立得，原来的红绳留作「红绳」主题。自己的主题放 `%LOCALAPPDATA%\Xitu\themes\<id>.json`。
 - 长按用画图编辑。把照片拖出绳子只复制，照片留在绳上。
 
-Linux（Hyprland + Quickshell）：
+Linux（Wayland + Quickshell）：
 
 - 设置窗口和 Windows 版对齐：图库位置（可选把图搬过去）、保存时间和「立即清理过期」、自动挂上、主题。选文件夹用 `zenity` 或 `kdialog`，都没装就直接在框里输入路径。
 - 没有托盘菜单；展开、图库、退出用 `qs ipc`（见下）或由顶栏、按键绑定触发。
@@ -136,7 +146,7 @@ dotnet run --project windows/tools/make-icon -- windows/Assets
 依赖（只列代码里实际调用的）：
 
 - Quickshell（`qs`）：壳的运行时。仓库未钉版本。
-- Hyprland：每屏窗口与聚焦屏判断走 Quickshell 的 Hyprland 集成。
+- 支持 layer-shell 的 Wayland 合成器。聚焦屏与全屏判断在 `linux/Desktop.qml`：Hyprland 走 Quickshell 的 Hyprland 集成，Sway 走 I3 集成，其余走 wlr-foreign-toplevel，都没有时用鼠标最近停过的屏。
 - Python 3 + Pillow：文件与剪贴板助手（`linux/xitu_helper.py`）。
 - wl-clipboard：`wl-paste`（剪贴板监听）和 `wl-copy`（单击复制）。
 - inotify-tools：`inotifywait`（截图文件夹监听）。
@@ -162,7 +172,7 @@ qs -p linux
 qs ipc -p linux call xitu toggle
 ```
 
-自带截图，对应 Windows 的 Ctrl+Shift+A（需要 `grim` 和 `slurp`；拖一块、点一个窗口，或点一块屏幕）。在 Hyprland 里绑键：
+自带截图，对应 Windows 的 Ctrl+Shift+A（需要 `grim` 和 `slurp`；拖一块、点一个窗口，或点一块屏幕）。在 Hyprland 里绑键（Sway 是 `bindsym Ctrl+Shift+a exec …`）：
 
 ```
 bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture

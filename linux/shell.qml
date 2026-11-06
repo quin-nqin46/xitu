@@ -2,7 +2,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 
 // 系图 Linux 版（Quickshell）独立运行的壳。启动：qs -p <本目录>
 // 后台逻辑在 XituCore.qml；这里给每块屏建一根绳子（开发用的抽屉见 uiMode）。
@@ -30,7 +29,8 @@ ShellRoot {
     readonly property bool uiChecked: true
 
     function focusedIn(list) {
-        var name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
+        var s = core.desktop.focusedScreen();
+        var name = s ? s.name : "";
         for (var i = 0; i < list.length; i++)
             if (list[i].monitorName === name) return list[i];
         return list.length > 0 ? list[0] : null;

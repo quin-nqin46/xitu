@@ -56,8 +56,6 @@ CARD_Y = 105  # 照片中间大概的高度（绳子 y≈10..40，夹子下面�
 
 # 允许的日志行：和应用无关、在无头 Sway 里必然出现的提示
 ALLOWED = [
-    r"HYPRLAND_INSTANCE_SIGNATURE",          # 不在 Hyprland 里，Quickshell.Hyprland 连不上
-    r"[Hh]yprland",
     r"QFont::|Fontconfig|font",              # CI 镜像字体少
     r"qt\.qpa\.wayland.*(cursor|Could not find)",
     r"xdg-desktop-portal|org\.freedesktop\.portal",
@@ -271,6 +269,12 @@ class Run:
         if len(xs) < 6:
             return None
         return box[0] + sum(xs) // len(xs), box[1] + sum(ys) // len(ys)
+
+    def changed(self, box, before):
+        """box 这块和 before（之前 grab 的同一块）比，变了的像素占比。"""
+        im = self.grab(box)
+        diff = ImageChops.difference(im, before).convert("L").point(lambda v: 255 if v > 24 else 0)
+        return diff.histogram()[255] / (im.size[0] * im.size[1])
 
     def rope_shown(self):
         # 绳子在屏幕最上面 0..220 这一条；收起时这里全是底色
@@ -631,6 +635,73 @@ def scenario(r: Run):
         r.ipc("peek")
         time.sleep(1.0)
         r.shot("清空后")
+    _()
+
+    # ---- 跨桌面：这里跑的是 Sway，聚焦屏和全屏判断走 Desktop.qml 的 sway 后端（I3 + toplevel 协议）----
+    @r.step("桌面后端：Sway，不碰 Hyprland")
+    def _():
+        r.wait_log(r"\[xitu\] 桌面后端：sway", 2, "桌面后端：sway")
+        if re.search(r"[Hh]yprland", r.log_text()):
+            raise AssertionError("Sway 上不该加载 Quickshell.Hyprland")
+    _()
+
+    @r.step("全屏窗口时不放下绳子")
+    def _():
+        top = (200, 0, W - 200, 220)
+        r.sh("swaymsg", "exec foot -a xitu-fs sleep 600")
+        r.wait_until(lambda: "xitu-fs" in r.sh("swaymsg", "-t", "get_tree"), 10, "foot 窗口出现")
+        r.sh("swaymsg", "[app_id=xitu-fs] focus, fullscreen enable")
+        time.sleep(1.0)
+        before = r.grab(top)
+        r.ipc("peek")
+        time.sleep(1.2)
+        if r.changed(top, before) > 0.01:
+            raise AssertionError("全屏时 ipc peek 放下了绳子")
+        r.pointer.move(W // 2, 300)
+        r.pointer.glide(W // 2, 0, steps=6)
+        r.pointer.move(W // 2, 1)
+        time.sleep(1.2)
+        if r.changed(top, before) > 0.01:
+            raise AssertionError("全屏时碰顶边放下了绳子")
+        r.shot("全屏时没放下")
+        r.pointer.move(W // 2, H - 100)
+        r.sh("swaymsg", "[app_id=xitu-fs] kill")
+        r.wait_until(lambda: "xitu-fs" not in r.sh("swaymsg", "-t", "get_tree"), 5, "foot 关掉")
+        time.sleep(0.5)
+        r.ipc("peek")
+        r.wait_until(r.rope_shown, 3, "退出全屏后 peek 能放下绳子")
+    _()
+
+    @r.step("两块屏：快捷键在聚焦的那块屏放下绳子")
+    def _():
+        W2, H2 = 1280, 720
+        r.sh("swaymsg", "create_output")
+        name = "HEADLESS-2"
+        r.sh("swaymsg", f"output {name} resolution {W2}x{H2} position {W} 0 bg #{'%02x%02x%02x' % BG} solid_color")
+        time.sleep(2.0)   # Quickshell 给新屏建绳子窗口
+        top1 = (200, 0, W - 200, 220)
+        top2 = (W + 100, 0, W + W2 - 100, 220)
+        try:
+            r.sh("swaymsg", f"focus output {name}")
+            time.sleep(0.5)
+            b1, b2 = r.grab(top1), r.grab(top2)
+            idle2 = b2
+            r.ipc("peek")
+            r.wait_until(lambda: r.changed(top2, b2) > 0.01, 3, "第二块屏放下绳子")
+            r.shot("第二块屏")
+            if r.changed(top1, b1) > 0.01:
+                raise AssertionError("聚焦第二块屏时，第一块屏也放下了绳子")
+            r.wait_until(lambda: r.changed(top2, idle2) < 0.002, 8, "第二块屏的绳子收起")
+            r.sh("swaymsg", "focus output HEADLESS-1")
+            time.sleep(0.5)
+            b1, b2 = r.grab(top1), r.grab(top2)
+            r.ipc("peek")
+            r.wait_until(lambda: r.changed(top1, b1) > 0.01, 3, "聚焦回第一块屏后在第一块屏放下")
+            if r.changed(top2, b2) > 0.01:
+                raise AssertionError("聚焦第一块屏时，第二块屏也放下了绳子")
+        finally:
+            r.sh("swaymsg", f"output {name} unplug", check=False)
+            r.sh("swaymsg", "focus output HEADLESS-1", check=False)
     _()
 
 

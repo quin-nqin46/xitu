@@ -1388,6 +1388,46 @@ def _hypr_json(what):
         return []
 
 
+def sway_window_boxes(tree):
+    """Sway（swaymsg -t get_tree）里各屏当前看得见的窗口，格式同 window_boxes。"""
+    lines = []
+
+    def walk(node):
+        kids = list(node.get("nodes") or []) + list(node.get("floating_nodes") or [])
+        if node.get("type") in ("con", "floating_con") and not kids:
+            r = node.get("rect") or {}
+            w, h = int(r.get("width") or 0), int(r.get("height") or 0)
+            if node.get("visible") and w > 0 and h > 0:
+                title = " ".join(str(node.get("name") or node.get("app_id") or "").split())
+                lines.append(f"{int(r.get('x') or 0)},{int(r.get('y') or 0)} {w}x{h} {title}".rstrip())
+            return
+        for k in kids:
+            walk(k)
+
+    if isinstance(tree, dict):
+        walk(tree)
+    return lines
+
+
+def _sway_tree():
+    try:
+        out = subprocess.run(["swaymsg", "-t", "get_tree", "-r"], capture_output=True, text=True, timeout=3)
+        return json.loads(out.stdout) if out.returncode == 0 else {}
+    except Exception:
+        return {}
+
+
+def capture_boxes(which=None):
+    """slurp 的预设窗口框：Hyprland 走 hyprctl，Sway 走 swaymsg；别的桌面没有，只能拖框或选整块屏。"""
+    import shutil
+    which = which or shutil.which
+    if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") and which("hyprctl"):
+        return window_boxes(_hypr_json("clients"), _hypr_json("monitors"))
+    if os.environ.get("SWAYSOCK") and which("swaymsg"):
+        return sway_window_boxes(_sway_tree())
+    return []
+
+
 def copy_to_clipboard_enabled(settings):
     """设置 CopyToClipboard，默认开（同 Windows Settings.cs）。"""
     v = settings.get("CopyToClipboard")
@@ -1402,7 +1442,7 @@ def cmd_capture():
     if missing:
         print("没装 " + " / ".join(missing) + "，先用系统截图键；截到截图文件夹的图会自动挂上", file=sys.stderr)
         return 3
-    boxes = window_boxes(_hypr_json("clients"), _hypr_json("monitors")) if shutil.which("hyprctl") else []
+    boxes = capture_boxes()
     # 没有预设框时 stdin 必须是空的：slurp 把一个空行当成「invalid box format」直接退出
     sel = subprocess.run(["slurp", "-o", "-d"], input="".join(b + "\n" for b in boxes), capture_output=True, text=True)
     geom = sel.stdout.strip()

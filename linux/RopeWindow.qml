@@ -2,7 +2,6 @@ import QtQuick
 import Qt.labs.platform as Native
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import "layout.js" as L
 import "fonts.js" as F
 
@@ -162,21 +161,10 @@ PanelWindow {
     }
 
     // ---- 展开 / 收起 ----
-    // 只有真全屏（Hyprland fullscreen 模式 2，看视频、玩游戏）才不展开。
-    // hasFullscreen 把 Super+O 的最大化（模式 1）也算进去，那样最大化窗口的屏上就唤不出绳子。
-    function fullscreenHere() {
-        var mon = Hyprland.monitorFor(win.modelData);
-        var ws = mon ? mon.activeWorkspace : null;
-        if (!ws || !ws.hasFullscreen) return false;
-        var tops = ws.toplevels ? ws.toplevels.values : [];
-        for (var i = 0; i < tops.length; i++) {
-            var o = tops[i].lastIpcObject;
-            if (o && o.fullscreen === 2) return true;
-        }
-        return false;
-    }
+    // 只有真全屏（看视频、玩游戏）才不展开；最大化不算。判断按桌面分后端，见 Desktop.qml。
+    function fullscreenHere() { return shell.desktop.fullscreenOn(win.modelData); }
 
-    // 工作区里有全屏或最大化窗口时，toplevel 的 lastIpcObject 可能是旧的，先刷新再判断
+    // 可能有全屏时先让后端刷新（Hyprland 的窗口状态可能是旧的），150ms 后再确认
     property bool pendingPin: false
     Timer {
         id: fullscreenCheck
@@ -185,11 +173,9 @@ PanelWindow {
     }
 
     function reveal(pin) {
-        var mon = Hyprland.monitorFor(win.modelData);
-        var ws = mon ? mon.activeWorkspace : null;
-        if (ws && ws.hasFullscreen && !revealed) {
+        if (!revealed && shell.desktop.maybeFullscreen(win.modelData)) {
             pendingPin = !!pin;
-            Hyprland.refreshToplevels();
+            shell.desktop.refresh();
             fullscreenCheck.restart();
             return;
         }
@@ -572,6 +558,7 @@ PanelWindow {
                 id: edgeHover
                 onHoveredChanged: {
                     if (hovered) {
+                        win.shell.desktop.noteScreen(win.modelData);
                         edgeTimer.restart();
                         retractTimer.stop();
                     } else {
@@ -617,6 +604,7 @@ PanelWindow {
             id: hover
             onHoveredChanged: {
                 if (hovered) {
+                    win.shell.desktop.noteScreen(win.modelData);
                     win.everHovered = true;
                     retractTimer.stop();
                     peekTimer.stop();
