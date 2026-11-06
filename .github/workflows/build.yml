@@ -27,6 +27,9 @@ jobs:
       - name: Build app
         run: dotnet build windows/Clothesline.csproj -c Release
 
+      - name: Unit tests
+        run: dotnet test windows/tests/Xitu.Tests/Xitu.Tests.csproj -c Release --logger "console;verbosity=normal"
+
       - name: Build icon tool
         run: dotnet build windows/tools/make-icon/MakeIcon.csproj -c Release
 
