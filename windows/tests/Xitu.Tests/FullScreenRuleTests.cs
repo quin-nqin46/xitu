@@ -21,11 +21,11 @@ public class FullScreenRuleTests
     // Chrome/Edge 在最大化状态下按 F11：去掉标题栏和粗边框，但保留最大化标记
     private const long BrowserF11 = (OverlappedWindow & ~(FullScreenRule.WsCaption | ThickFrame)) | Maximize | Visible;
 
-    private static readonly Box Fhd = new(0, 0, 1920, 1080);
-    private static readonly Box Qhd2 = new(1920, 0, 4480, 1440); // 右边第二块屏，150% 缩放
+    private static readonly ScreenRect Fhd = new(0, 0, 1920, 1080);
+    private static readonly ScreenRect Qhd2 = new(1920, 0, 4480, 1440); // 右边第二块屏，150% 缩放
 
     /// 最大化窗口：工作区四周各溢出 frame 像素。
-    private static Box Maximized(Box work, int frame) =>
+    private static ScreenRect Maximized(ScreenRect work, int frame) =>
         new(work.Left - frame, work.Top - frame, work.Right + frame, work.Bottom + frame);
 
     // ---- 复现：只看矩形会误判 ----
@@ -73,7 +73,7 @@ public class FullScreenRuleTests
     [Fact]
     public void Small_window_is_not_fullscreen()
     {
-        Assert.False(FullScreenRule.IsFullScreen(new Box(100, 100, 900, 700), Fhd, NormalRestored));
+        Assert.False(FullScreenRule.IsFullScreen(new ScreenRect(100, 100, 900, 700), Fhd, NormalRestored));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class FullScreenRuleTests
     [Fact]
     public void Fullscreen_with_few_pixels_margin_is_still_fullscreen()
     {
-        var window = new Box(4, 4, 1916, 1076);
+        var window = new ScreenRect(4, 4, 1916, 1076);
         Assert.True(FullScreenRule.IsFullScreen(window, Fhd, BorderlessPopup));
     }
 
@@ -120,6 +120,6 @@ public class FullScreenRuleTests
     public void Restored_captioned_window_stretched_over_screen_is_fullscreen()
     {
         // 未最大化但手动拉满整屏的窗口：保持原行为，仍按全屏处理
-        Assert.True(FullScreenRule.IsFullScreen(new Box(-2, -2, 1922, 1082), Fhd, NormalRestored));
+        Assert.True(FullScreenRule.IsFullScreen(new ScreenRect(-2, -2, 1922, 1082), Fhd, NormalRestored));
     }
 }
