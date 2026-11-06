@@ -1,0 +1,31 @@
+[32m  INFO[0m: Launching config: "/__w/xitu/xitu/linux/shell.qml"
+[32m  INFO[0m: Shell ID: "6772b3c4fc484cf04c50deb5023ad635" Path ID "6772b3c4fc484cf04c50deb5023ad635"
+[32m  INFO[0m: Saving logs to "/tmp/xitu-ui-pgjqxszd/runtime/quickshell/by-id/mxigo2ot/log.qslog"
+[34m DEBUG[97m qml[0m: [xitu] 主题色 读不到工作区高亮色，用 #3D6FE0；accent-strong #2c62dd
+[32m  INFO[0m: Configuration Loaded
+[34m DEBUG[97m qml[0m: [xitu] 恢复 0 张
+[34m DEBUG[97m qml[0m: [xitu] 主题 polaroid-blue 主题蓝绳 + 拍立得
+[33m  WARN[0m: $HYPRLAND_INSTANCE_SIGNATURE is unset. Cannot connect to hyprland.
+[34m DEBUG[97m qml[0m: [xitu] 挂上 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819.png
+[34m DEBUG[97m qml[0m: [xitu] 挂上 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819_2.png
+[34m DEBUG[97m qml[0m: [xitu] 挂上 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819_3.png
+[34m DEBUG[97m qml[0m: [xitu] 挂上 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/截图_20261106_084831.png
+[34m DEBUG[97m qml[0m: [xitu] 编辑器 python3
+[34m DEBUG[97m qml[0m: [xitu] 编辑后刷新 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819.png
+[34m DEBUG[97m qml[0m: [xitu] 换位置 → 2
+[34m DEBUG[97m qml[0m: [xitu] 另存为 /tmp/xitu-ui-pgjqxszd/saved/另存的.png
+[34m DEBUG[97m qml[0m: [xitu] 编辑器 python3
+[34m DEBUG[97m qml[0m: [xitu] 编辑后刷新 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819_2.png
+[34m DEBUG[97m qml[0m: [xitu] 挂上 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/截图_20261106_084903.png
+[34m DEBUG[97m qml[0m: [xitu] 图库打开于 HEADLESS-1
+[34m DEBUG[97m qml[0m: [xitu] 图库 5 张
+[34m DEBUG[97m qml[0m: [xitu] 图库关闭
+[33m  WARN[97m qt.qpa.wayland.textinput[0m: virtual void QtWaylandClient::QWaylandTextInputv3::disableSurface(wl_surface*) Trying to disable 0x7f7d78792320 but 0x0 is focused
+[34m DEBUG[97m qml[0m: [xitu] 主题 polaroid-blue 主题蓝绳 + 拍立得
+[34m DEBUG[97m qml[0m: [xitu] 主题 red-rope 红绳
+[34m DEBUG[97m qml[0m: [xitu] 主题 graphite 石墨细线
+[34m DEBUG[97m qml[0m: [xitu] 主题 linen 柔和麻绳
+[34m DEBUG[97m qml[0m: [xitu] 主题 caelestia Caelestia
+[34m DEBUG[97m qml[0m: [xitu] 主题 polaroid-blue 主题蓝绳 + 拍立得
+[34m DEBUG[97m qml[0m: [xitu] 取下 /tmp/xitu-ui-pgjqxszd/home/Pictures/系图/2026-11/文件_20261106_084819_2.png
+[34m DEBUG[97m qml[0m: [xitu] 清空绳子
