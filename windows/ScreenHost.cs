@@ -248,7 +248,7 @@ internal sealed class ScreenHost : IDisposable
         if (revealed == null)
         {
             _awaySinceUtc = null;
-            var under = _windows.FirstOrDefault(w => w.Monitor.InTopBand(pt.X, pt.Y));
+            var under = _windows.FirstOrDefault(w => w.Monitor.InTopBand(pt.X, pt.Y, _line.Count));
             if (under != null && !FullScreen.IsActive(under.Monitor))
             {
                 _hotSinceUtc ??= now;

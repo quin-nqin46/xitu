@@ -4,6 +4,7 @@ namespace Clothesline;
 internal static class LineCapacity
 {
     public const double Spacing = 174;
+    public const double CardWidth = 150;
     public const int MinItems = 3;
     public const int MaxItemsCap = 12;
 
