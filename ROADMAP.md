@@ -14,10 +14,10 @@
 - Linux 编辑：长按或右键「编辑」，`$XITU_EDITOR` → satty / swappy → xdg-open，存盘后卡片刷新
 - Linux 自带截图：`ipc capture`（Hyprland 绑 Ctrl+Shift+A），slurp 框选 + grim；没装就提示改用系统截图键
 - 修顶部误触发：只有顶边中间挂照片的那一段感应，两角和标签页、标题栏不再触发（Windows 窄带从 20 降到 4 DIP）
+- 卡片右键「另存为…」，两边都有
 
 待做：
 
-- 卡片右键「另存为」，两边一起做
 - 共用测试用例：`shared/` 下放 JSON 用例，xunit 和 pytest 都读，改了一边忘了另一边，检查会直接报错
 
 ## v0.2 第一次正式发布

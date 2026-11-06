@@ -146,6 +146,29 @@ Scope {
     function openFile(path) { Quickshell.execDetached(["xdg-open", path]); }
     function revealFile(path) { Quickshell.execDetached(["python3", helper, "reveal", path]); }
 
+    // 另存为：助手弹 zenity / kdialog 的保存对话框，复制一份过去（同 Windows GrabArea.SaveAs）
+    function saveAs(path) { saveAsJob.createObject(root, { file: path }); }
+
+    Component {
+        id: saveAsJob
+        Process {
+            id: saveProc
+            property string file
+            running: true
+            command: ["python3", root.helper, "save-as", file]
+            stdout: StdioCollector { onStreamFinished: if (text.trim() !== "") root.log("另存为 " + text.trim()) }
+            stderr: StdioCollector {
+                onStreamFinished: {
+                    var msg = text.trim();
+                    if (msg === "") return;
+                    root.log(msg);
+                    Quickshell.execDetached(["notify-send", "-a", "系图", "另存为", msg]);
+                }
+            }
+            onExited: saveProc.destroy()
+        }
+    }
+
     // ---- 编辑：同 Windows 长按 / 「用画图编辑」。编辑器存回原文件后刷新卡片缩略图 ----
     property var thumbRevs: ({})
     property int thumbTick: 0
