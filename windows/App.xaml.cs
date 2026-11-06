@@ -54,6 +54,13 @@ public partial class App : Application
         var firstRun = !File.Exists(AppPaths.SettingsFile);
         AppSettings.Load();
         ThemeStore.Load();
+        var render = Array.FindIndex(e.Args, a => string.Equals(a, "--render-themes", StringComparison.OrdinalIgnoreCase));
+        if (render >= 0)
+        {
+            // 诊断：给每个主题画一张预览 PNG 后退出，不起托盘、热键和监听（见 ThemePreview）
+            ThemePreview.Run(render + 1 < e.Args.Length ? e.Args[render + 1] : "theme-previews", this);
+            return;
+        }
         Library.Start(Dispatcher);
         _line = new Line();
         _line.Restore();
