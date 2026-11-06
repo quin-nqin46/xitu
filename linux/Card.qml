@@ -3,6 +3,7 @@ import QtQuick.Effects
 import Qt.labs.platform as Native
 import Quickshell.Widgets
 import "layout.js" as L
+import "fonts.js" as F
 
 // 一张照片和顶部原木夹（PeggedView.cs）。倾斜是静止角，摆动叠在上面。
 // 物理：位置、下落入场、摆动三组阻尼弹簧，参数照搬 Windows 版。
@@ -314,7 +315,7 @@ Item {
                 text: "已复制"
                 color: "white"
                 font.pixelSize: 12
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
             }
         }
 
