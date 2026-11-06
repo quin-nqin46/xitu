@@ -36,7 +36,8 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 | Path | Contents |
 |---|---|
 | `windows/` | Windows source (`Clothesline.csproj`, WPF; `Assets/`, `Capture/`, `tools/make-icon/`) |
-| `linux/` | Linux source (Quickshell shell: QML, `xitu_helper.py`, theme JSON) |
+| `linux/` | Linux source (Quickshell shell: QML, `xitu_helper.py`) |
+| `shared/themes/` | rope themes (JSON), read by both Windows and Linux |
 | `docs/` | demo images |
 | `LICENSE`, `NOTICE` | licensing |
 
@@ -54,6 +55,7 @@ Windows:
 
 - Tray menu, one rope per screen, slides out from the top edge.
 - Global hotkey Ctrl+Shift+A by default: box-select, click a window, or press Enter for the whole screen; the photo flies onto the rope.
+- Rope themes: tray menu › 换主题. Same theme files as Linux (`shared/themes/`); the default is the blue rope with polaroid frames, the old red rope is still there as 红绳. Custom themes go in `%LOCALAPPDATA%\Xitu\themes\<id>.json`.
 - Press and hold to edit in Paint. Dragging a photo off the line only copies it; the photo stays on the rope.
 
 Linux (Hyprland + Quickshell):
@@ -139,7 +141,7 @@ Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openL
 Xitu runs on its own with `qs -p linux`; Caelestia is not required.
 
 - Drawer colors: in `drawer` mode the drawer reads Caelestia's color scheme live from `${XDG_STATE_HOME:-~/.local/state}/caelestia/scheme.json`. Without that file it uses a built-in dark scheme. (`linux/ThemeEngine.qml`)
-- Rope theme: `linux/themes/caelestia.json` is a rope theme in Caelestia's palette; switch to it with `qs ipc -p linux call xitu setTheme caelestia`.
+- Rope theme: `shared/themes/caelestia.json` is a rope theme in Caelestia's palette; switch to it with `qs ipc -p linux call xitu setTheme caelestia`.
 - Embedding: the background logic lives in `linux/XituCore.qml`, separate from the windows, so another Quickshell shell (for example a Caelestia config) can host the drawer itself. In that setup only `rope` mode still needs this process.
 
 Optional accent for rope themes whose color is `accent`: point two environment variables at files provided by your desktop shell. If either is unset or unreadable, the theme's own accent is used (default `#3D6FE0`).
@@ -156,7 +158,7 @@ Windows paths are listed under "Windows build and install". Linux paths, with th
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | what is on the rope (same format as Windows) | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | settings (`ui`, `Theme`, `LibraryPath`, `RetentionDays`, `Collect`, …) | `linux/xitu_helper.py`; `linux/shell.qml` reads the `ui` field from the same file |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | helper log | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | custom themes (same id overrides the built-in) | `linux/themes/README.md` |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | custom themes (same id overrides the built-in) | `shared/themes/README.md` |
 | gallery root | `系图/` under `xdg-user-dir PICTURES` (falls back to `~/Pictures`), overridable via `LibraryPath` | `linux/xitu_helper.py` |
 | screenshot folder | watched for new screenshots: `$XITU_SCREENSHOT_DIR` if set, otherwise `Screenshots/` (or an existing `屏幕截图/`) under the Pictures folder | `linux/xitu_helper.py` (`screenshot-dir`) |
 

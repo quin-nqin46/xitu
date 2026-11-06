@@ -6,7 +6,7 @@ import "layout.js" as L
 
 // 绳子的离屏渲染（qs -p linux/tools/render-rope.qml 跑）。
 // 复用仓库里真的 Rope.qml 和 Card.qml，喂 tools/out/fake-1..3.png 纯色假图；
-// 假主题按 linux/themes/polaroid-blue.json 的内置默认值手写（accent-strong = #2C62DD）。
+// 假主题按 shared/themes/polaroid-blue.json 的内置默认值手写（accent-strong = #2C62DD）。
 // 窗口可见性手法同 render-shell.qml：真实建窗但透明 + 无输入区 + 内容 opacity 0，
 // grabToImage 对内部 Item 出全彩 PNG。
 //
@@ -18,7 +18,7 @@ ShellRoot {
 
     function log(msg) { console.log("[xitu-render-rope] " + msg); }
 
-    // ---- 假主题：Rope + Card 读到的字段，值取自 themes/polaroid-blue.json ----
+    // ---- 假主题：Rope + Card 读到的字段，值取自 shared/themes/polaroid-blue.json ----
     QtObject {
         id: ropeTheme
 

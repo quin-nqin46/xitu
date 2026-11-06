@@ -53,6 +53,7 @@ public partial class App : Application
         Autostart.ClearLegacy();
         var firstRun = !File.Exists(AppPaths.SettingsFile);
         AppSettings.Load();
+        ThemeStore.Load();
         Library.Start(Dispatcher);
         _line = new Line();
         _line.Restore();

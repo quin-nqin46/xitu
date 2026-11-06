@@ -32,6 +32,20 @@ internal static class TrayMenuStyle
         menu.HandleCreated += (_, _) => RoundCorners(menu.Handle);
     }
 
+    /// 子菜单（如「换主题」）和主菜单同一套样式。
+    public static void ApplyDropDown(WinForms.ToolStripDropDownMenu menu)
+    {
+        menu.Renderer = new Renderer();
+        menu.BackColor = Paper;
+        menu.ForeColor = Ink;
+        menu.Font = new Font("Microsoft YaHei UI", 9.75f);
+        menu.ShowImageMargin = false;
+        menu.ShowCheckMargin = false;
+        menu.Padding = new WinForms.Padding(4, 4, 4, 4);
+        menu.DropShadowEnabled = true;
+        menu.HandleCreated += (_, _) => RoundCorners(menu.Handle);
+    }
+
     public static void Item(WinForms.ToolStripItem item)
     {
         item.Padding = new WinForms.Padding(2, 4, 2, 4);
