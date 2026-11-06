@@ -312,9 +312,18 @@ internal sealed class SettingsWindow : Window
         };
         copy.Checked += (_, _) => { if (_ready) { AppSettings.Current.CopyToClipboard = true; AppSettings.Current.Save(); } };
         copy.Unchecked += (_, _) => { if (_ready) { AppSettings.Current.CopyToClipboard = false; AppSettings.Current.Save(); } };
+        var copied = new CheckBox
+        {
+            Content = "复制的图片也挂上绳（如浏览器里复制图片）",
+            IsChecked = AppSettings.Current.HangCopiedImages,
+            Margin = new Thickness(0, 8, 0, 8),
+        };
+        copied.Checked += (_, _) => { if (_ready) { AppSettings.Current.HangCopiedImages = true; AppSettings.Current.Save(); } };
+        copied.Unchecked += (_, _) => { if (_ready) { AppSettings.Current.HangCopiedImages = false; AppSettings.Current.Save(); } };
         var stack = new StackPanel { Margin = new Thickness(18) };
         stack.Children.Add(start);
         stack.Children.Add(copy);
+        stack.Children.Add(copied);
         return new Border { Child = stack };
     }
 
