@@ -15,10 +15,9 @@
 - Linux 自带截图：`ipc capture`（Hyprland 绑 Ctrl+Shift+A），slurp 框选 + grim；没装就提示改用系统截图键
 - 修顶部误触发：只有顶边中间挂照片的那一段感应，两角和标签页、标题栏不再触发（Windows 窄带从 20 降到 4 DIP）
 - 卡片右键「另存为…」，两边都有
+- 共用测试用例：`shared/tests/*.json`（剪贴板规则、绳子容量、顶边感应段、保存时间文字），xunit 和 pytest 都跑；CI 上 Linux 也跑 pytest
 
-待做：
-
-- 共用测试用例：`shared/` 下放 JSON 用例，xunit 和 pytest 都读，改了一边忘了另一边，检查会直接报错
+v0.1 的项目都做完了。
 
 ## v0.2 第一次正式发布
 
