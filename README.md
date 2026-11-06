@@ -113,6 +113,12 @@ Dependencies — only what the code actually calls:
 
 The Linux version does not capture screenshots itself; it picks them up from the screenshot folder and the clipboard.
 
+Tests for the helper script (need pytest and Pillow; no Wayland or desktop required):
+
+```
+python3 -m pytest linux/tests
+```
+
 Run from the repository root:
 
 ```
