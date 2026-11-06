@@ -18,6 +18,7 @@ fi
 mkdir -p tools/out
 # 软链不进库，运行时现建；quickshell 的配置扫描出不了 tools 根目录，软链让它用上一级的真实组件
 ln -sfn ../layout.js tools/layout.js
+ln -sfn ../fonts.js tools/fonts.js
 ln -sfn ../DrawerPanel.qml tools/DrawerPanel.qml
 # render-rope.qml（绳子出图）还要用 Card.qml、Rope.qml
 ln -sfn ../Card.qml tools/Card.qml

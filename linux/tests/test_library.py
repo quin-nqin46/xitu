@@ -33,7 +33,7 @@ def test_scan_lists_owned_files_newest_first(helper, library, capsys):
     assert data["items"][0]["favorite"] is False
     assert data["occupied"] == old.stat().st_size + new.stat().st_size
     assert data["retention"] == "30 天"
-    assert data["capture"] == "Super+Shift+S"
+    assert data["capture"] == "Ctrl+Shift+A"
 
 
 def test_scan_empty_library(helper, tmp_path, capsys):
@@ -50,13 +50,13 @@ def test_retention_label(helper, days, label):
 
 
 @pytest.mark.parametrize("settings, label", [
-    ({}, "Super+Shift+S"),
+    ({}, "Ctrl+Shift+A"),
     ({"CaptureModifiers": 0x0006, "CaptureKey": 0x41}, "Ctrl+Shift+A"),
     ({"CaptureModifiers": 0x0009, "CaptureKey": 0x73}, "Alt+Win+F4"),
     ({"CaptureModifiers": 0, "CaptureKey": 0x2C}, "PrtSc"),
-    ({"CaptureModifiers": 0, "CaptureKey": 0x41}, "Super+Shift+S"),   # 没修饰键的普通键不算
-    ({"CaptureModifiers": 2, "CaptureKey": 0x11}, "Super+Shift+S"),   # 只有修饰键
-    ({"CaptureModifiers": "bad", "CaptureKey": 1}, "Super+Shift+S"),
+    ({"CaptureModifiers": 0, "CaptureKey": 0x41}, "Ctrl+Shift+A"),   # 没修饰键的普通键不算
+    ({"CaptureModifiers": 2, "CaptureKey": 0x11}, "Ctrl+Shift+A"),   # 只有修饰键
+    ({"CaptureModifiers": "bad", "CaptureKey": 1}, "Ctrl+Shift+A"),
 ])
 def test_capture_label(helper, settings, label):
     assert helper.capture_label(settings) == label
@@ -223,17 +223,82 @@ def test_library_root_from_settings(helper, library):
 
 
 def test_screenshot_dir_env(helper, monkeypatch, tmp_path):
-    monkeypatch.setenv("XITU_SCREENSHOT_DIR", str(tmp_path / "shots"))
-    assert helper.screenshot_dir() == tmp_path / "shots"
+    shots = tmp_path / "shots"
+    monkeypatch.setenv("XITU_SCREENSHOT_DIR", str(shots))
+    assert helper.screenshot_dirs() == []            # 不存在就不盯，也不替用户建
+    assert not shots.exists()
+    shots.mkdir()
+    assert helper.screenshot_dirs() == [(shots, False)]
+    assert helper.screenshot_dir() == shots
 
 
-def test_screenshot_dir_prefers_existing(helper):
+def test_screenshot_dir_xdg(helper, monkeypatch, tmp_path):
+    xdg = tmp_path / "xdg-shots"
+    xdg.mkdir()
+    monkeypatch.setenv("XDG_SCREENSHOTS_DIR", str(xdg))
+    monkeypatch.setattr(helper, "_xdg_screenshots_dir", lambda: xdg)
+    assert helper.screenshot_dirs() == [(xdg, False)]
+
+
+def test_screenshot_dirs_default(helper):
     pics = helper.pictures_dir()
-    assert helper.screenshot_dir() == pics / "Screenshots"
+    # 什么都没有时只盯「图片」根目录（grim / grimblast / hyprshot 默认存这里），不建 Screenshots
+    assert helper.screenshot_dirs() == [(pics, True)]
+    assert not (pics / "Screenshots").exists()
     (pics / "屏幕截图").mkdir()
-    assert helper.screenshot_dir() == pics / "屏幕截图"
     (pics / "Screenshots").mkdir()
+    assert helper.screenshot_dirs() == [(pics / "Screenshots", False), (pics / "屏幕截图", False), (pics, True)]
     assert helper.screenshot_dir() == pics / "Screenshots"
+
+
+@pytest.mark.parametrize("name, ok", [
+    ("20261106_07h47m35s_grim.png", True),
+    ("2026-11-06-074735_hyprshot.png", True),
+    ("2026-11-06T07:47:35+08:00.png", True),
+    ("Screenshot from 2026-11-06 07-47-35.png", True),
+    ("截图_20261106.png", True),
+    ("holiday.png", False),
+    ("wallpaper-4k.jpg", False),
+])
+def test_pictures_root_only_takes_screenshot_names(helper, name, ok):
+    pics = helper.pictures_dir()
+    assert helper.is_screenshot_file(pics / name) is ok
+    (pics / "Screenshots").mkdir()
+    assert helper.is_screenshot_file(pics / "Screenshots" / "holiday.png") is True
+    assert helper.is_screenshot_file(pics / "elsewhere" / name) is False
+
+
+def test_auto_import_skips_non_screenshots_in_pictures_root(helper, library, sample_png, capsys):
+    pics = helper.pictures_dir()
+    (pics / "holiday.png").write_bytes(sample_png)
+    assert helper.cmd_auto_import(str(pics / "holiday.png")) == 0
+    assert capsys.readouterr().out == ""
+    (pics / "20261106_07h47m35s_grim.png").write_bytes(sample_png)
+    assert helper.cmd_auto_import(str(pics / "20261106_07h47m35s_grim.png")) == 0
+    assert "截图_" in capsys.readouterr().out
+
+
+def test_libc_has_prctl(helper):
+    assert helper._libc() is not None
+
+
+def test_run_missing_command_does_not_spin(helper, monkeypatch):
+    slept = []
+    monkeypatch.setattr(helper.time, "sleep", slept.append)
+    assert helper.cmd_run(["definitely-not-a-command-xitu"]) == 127
+    assert slept == [300]
+
+
+def test_check_deps(helper, monkeypatch, capsys):
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda name: None if name in ("wl-paste", "grim") else "/usr/bin/" + name)
+    assert helper.cmd_check_deps() == 1
+    out = capsys.readouterr().out.splitlines()
+    assert out == [line for line in out if line.split("\t")[0] in ("wl-paste", "grim")]
+    assert any(line.startswith("wl-paste\t必需") for line in out)
+    assert any(line.startswith("grim\t可选") for line in out)
+    monkeypatch.setattr(shutil, "which", lambda name: None if name == "grim" else "/usr/bin/" + name)
+    assert helper.cmd_check_deps() == 0        # 只缺可选的不算失败
 
 
 # ---- 剪贴板 ----
@@ -310,7 +375,8 @@ def test_clip_own_mode_takes_nothing(helper, library, monkeypatch, sample_png, c
 
 
 def test_auto_import_respects_own_mode(helper, library, tmp_path, sample_png, capsys):
-    shot = tmp_path / "shot.png"
+    (helper.pictures_dir() / "Screenshots").mkdir()
+    shot = helper.pictures_dir() / "Screenshots" / "shot.png"
     shot.write_bytes(sample_png)
     _collect(helper, library, "own")
     assert helper.cmd_auto_import(str(shot)) == 0
