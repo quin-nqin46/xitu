@@ -23,8 +23,8 @@ internal static class FullScreen
         if (!NativeMethods.GetWindowRect(hwnd, out var r)) return false;
         var m = monitor.Bounds;
         return FullScreenRule.IsFullScreen(
-            new Box(r.Left, r.Top, r.Right, r.Bottom),
-            new Box(m.Left, m.Top, m.Right, m.Bottom),
+            new ScreenRect(r.Left, r.Top, r.Right, r.Bottom),
+            new ScreenRect(m.Left, m.Top, m.Right, m.Bottom),
             GetStyle(hwnd));
     }
 

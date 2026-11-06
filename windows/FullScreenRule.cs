@@ -1,7 +1,7 @@
 namespace Clothesline;
 
 /// 屏幕坐标里的矩形（右、下不含）。和 NativeMethods.RECT 一样的布局，但不依赖 Win32，方便单测。
-internal readonly record struct Box(int Left, int Top, int Right, int Bottom);
+internal readonly record struct ScreenRect(int Left, int Top, int Right, int Bottom);
 
 /// 全屏判定的纯逻辑。FullScreen 负责取前台窗口的数据，这里只做判断。
 internal static class FullScreenRule
@@ -13,7 +13,7 @@ internal static class FullScreenRule
     public const int Tolerance = 8;
 
     /// 窗口矩形是否盖住整块屏幕。
-    public static bool Covers(Box window, Box monitor) =>
+    public static bool Covers(ScreenRect window, ScreenRect monitor) =>
         window.Left <= monitor.Left + Tolerance
         && window.Top <= monitor.Top + Tolerance
         && window.Right >= monitor.Right - Tolerance
@@ -25,7 +25,7 @@ internal static class FullScreenRule
     /// 普通最大化窗口（还带边框溢出几像素）也会盖住整块屏幕。
     /// 真正的全屏（游戏、F11、播放器）都会去掉标题栏，
     /// 所以“最大化且带标题栏”的窗口一律不算全屏。
-    public static bool IsFullScreen(Box window, Box monitor, long style)
+    public static bool IsFullScreen(ScreenRect window, ScreenRect monitor, long style)
     {
         if (!Covers(window, monitor)) return false;
         var maximized = (style & WsMaximize) != 0;
