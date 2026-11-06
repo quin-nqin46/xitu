@@ -50,7 +50,7 @@ internal sealed class GalleryWindow : Window
         Height = AppSettings.Current.GalleryHeight > 200 ? AppSettings.Current.GalleryHeight : 680;
         MinWidth = 720;
         MinHeight = 480;
-        Background = Theme.PaperBrush;
+        Background = ThemeStore.Brush(ThemeStore.Current.GalleryBg);
         FontFamily = new FontFamily("Microsoft YaHei UI");
         FontSize = 13;
         Foreground = Theme.InkBrush;
@@ -99,7 +99,7 @@ internal sealed class GalleryWindow : Window
         };
         settingsLink.MouseLeftButtonUp += (_, _) => SettingsWindow.ShowPage(SettingsPage.Library);
 
-        var side = new DockPanel { Width = 180, Background = Theme.PaperBrush };
+        var side = new DockPanel { Width = 180, Background = ThemeStore.Brush(ThemeStore.Current.GalleryBg) };
         var title = new TextBlock
         {
             Text = "图库",

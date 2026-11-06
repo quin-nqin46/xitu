@@ -22,7 +22,6 @@ internal sealed class LineView : Canvas
         _hint = new Border
         {
             CornerRadius = new CornerRadius(14),
-            Background = Theme.PaperBrush,
             Padding = new Thickness(12, 6, 12, 6),
             IsHitTestVisible = false,
         };
@@ -30,9 +29,9 @@ internal sealed class LineView : Canvas
         {
             Text = IdleHint,
             FontSize = 12,
-            Foreground = Theme.InkBrush,
         };
         _hint.Child = _hintText;
+        PaintHint();
 
         // 从别处拖图片进来。
         AllowDrop = true;
@@ -46,6 +45,7 @@ internal sealed class LineView : Canvas
         _line.Changed += OnChanged;
         _line.Removing += OnRemoving;
         _line.Relocated += OnRelocated;
+        ThemeStore.Changed += OnThemeChanged;
         SizeChanged += (_, _) => Sync(snapNew: false);
         Swing.HostCreated();
         Sync(snapNew: true);
@@ -56,6 +56,7 @@ internal sealed class LineView : Canvas
         _line.Changed -= OnChanged;
         _line.Removing -= OnRemoving;
         _line.Relocated -= OnRelocated;
+        ThemeStore.Changed -= OnThemeChanged;
         foreach (var peg in _pegs) peg.Retire();
         foreach (var peg in _falling) peg.Retire();
         _pegs.Clear();
@@ -86,7 +87,7 @@ internal sealed class LineView : Canvas
         _movingIndex = Math.Clamp(index, 0, count - 1);
 
         x = Math.Clamp(x, first - Layout.Spacing * 0.6, Layout.X(count - 1, count, width) + Layout.Spacing * 0.6);
-        _moving.Follow(x - Layout.CardWidth / 2, Layout.RopeY(x, width) - Layout.PinAbove);
+        _moving.Follow(x - Layout.CardWidth / 2, Layout.RopeY(x, width) - Layout.ClipAbove);
 
         var others = _line.Items.Where(i => i.Id != _moving.Item.Id).ToList();
         for (var i = 0; i < others.Count; i++)
@@ -95,7 +96,7 @@ internal sealed class LineView : Canvas
             var peg = _pegs.FirstOrDefault(p => p.Item.Id == others[i].Id);
             if (peg == null) continue;
             var px = Layout.X(slot, count, width);
-            peg.SetPlacement(px - Layout.CardWidth / 2, Layout.RopeY(px, width) - Layout.PinAbove, snap: false);
+            peg.SetPlacement(px - Layout.CardWidth / 2, Layout.RopeY(px, width) - Layout.ClipAbove, snap: false);
         }
     }
 
@@ -216,10 +217,28 @@ internal sealed class LineView : Canvas
 
             var x = Layout.X(i, items.Count, width);
             var ropeY = Layout.RopeY(x, width);
-            peg.SetPlacement(x - Layout.CardWidth / 2, ropeY - Layout.PinAbove, snap: snapNew || created);
+            peg.SetPlacement(x - Layout.CardWidth / 2, ropeY - Layout.ClipAbove, snap: snapNew || created);
         }
 
         UpdateHint();
+    }
+
+    private void PaintHint()
+    {
+        var h = ThemeStore.Current.Hint;
+        _hint.Background = ThemeStore.Brush(h.Bg);
+        _hint.BorderThickness = new Thickness(h.Border.IsTransparent ? 0 : 1);
+        _hint.BorderBrush = h.Border.IsTransparent ? null : ThemeStore.Brush(h.Border);
+        _hintText.Foreground = ThemeStore.Brush(h.Fg);
+    }
+
+    /// 换主题：绳子重画，夹子和相框重排，不用重启。
+    private void OnThemeChanged()
+    {
+        _rope.InvalidateVisual();
+        PaintHint();
+        foreach (var peg in _pegs) peg.ApplyTheme();
+        Sync(snapNew: true);
     }
 
     private const string IdleHint = "截一张图，它会挂在这里";

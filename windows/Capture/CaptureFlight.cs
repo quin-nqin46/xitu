@@ -39,12 +39,11 @@ internal sealed class CaptureFlight
         _card = new Border
         {
             Child = photo,
-            Background = Theme.CardBrush,
             BorderThickness = new Thickness(0),
             IsHitTestVisible = false,
         };
         // 投影按落点卡片大小画一次，飞行中只拉伸（见 SoftShadow）
-        _shadow = new SoftShadow(Math.Max(1, to.Width), Math.Max(1, to.Height), Layout.FrameRadius, ShadowBlur, depth: 6, opacity: 0.35);
+        _shadow = new SoftShadow(Math.Max(1, to.Width), Math.Max(1, to.Height), ThemeStore.Current.Frame.Radius, ShadowBlur, depth: 6, opacity: 0.35);
         _host = new Grid
         {
             RenderTransformOrigin = new Point(0.5, 0),
@@ -128,14 +127,14 @@ internal sealed class CaptureFlight
         var center = Lerp(_from.Left + _from.Width / 2, _to.Left + _to.Width / 2, k);
         var top = Lerp(_from.Top, _to.Top, k) - Math.Sin(Math.PI * k) * Layout.FlightArc;
         var chrome = Smooth(k, 0.35, 1);
-        var inset = Layout.FrameInset * chrome;
-        var radius = Layout.FrameRadius * chrome;
+        var f = ThemeStore.Current.Frame;
+        var radius = f.Radius * chrome;
 
         _card.Width = Math.Max(1, width);
         _card.Height = Math.Max(1, height);
-        _card.Padding = new Thickness(inset);
+        _card.Padding = new Thickness(f.PadLeft * chrome, f.PadTop * chrome, f.PadRight * chrome, f.PadBottom * chrome);
         _card.CornerRadius = new CornerRadius(radius);
-        _card.Background = new SolidColorBrush(Color.FromArgb((byte)(255 * chrome), 255, 255, 255));
+        _card.Background = new SolidColorBrush(Color.FromArgb((byte)(f.Paper.A * chrome), f.Paper.R, f.Paper.G, f.Paper.B));
         if (_card.Child is Image photo)
             photo.Opacity = 1;
         _shadow.Fit(_card.Width, _card.Height, ShadowBlur);

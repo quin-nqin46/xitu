@@ -41,4 +41,9 @@
     <Resource Include="Assets\xitu.ico" />
   </ItemGroup>
 
+  <!-- 内置绳子主题和 Linux 版共用 shared/themes，打进程序（单文件发布也带着）。ThemeStore 按 themes/<id>.json 取。 -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\shared\themes\*.json" LogicalName="themes/%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
