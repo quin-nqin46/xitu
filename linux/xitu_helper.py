@@ -1403,7 +1403,8 @@ def cmd_capture():
         print("没装 " + " / ".join(missing) + "，先用系统截图键；截到截图文件夹的图会自动挂上", file=sys.stderr)
         return 3
     boxes = window_boxes(_hypr_json("clients"), _hypr_json("monitors")) if shutil.which("hyprctl") else []
-    sel = subprocess.run(["slurp", "-o", "-d"], input="\n".join(boxes) + "\n", capture_output=True, text=True)
+    # 没有预设框时 stdin 必须是空的：slurp 把一个空行当成「invalid box format」直接退出
+    sel = subprocess.run(["slurp", "-o", "-d"], input="".join(b + "\n" for b in boxes), capture_output=True, text=True)
     geom = sel.stdout.strip()
     if sel.returncode != 0 or not geom:
         log("截图已取消")
