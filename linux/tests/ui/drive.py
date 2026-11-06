@@ -63,6 +63,7 @@ ALLOWED = [
     r"dbus|DBus|D-Bus",
     r"QStandardPaths",
     r"No such file or directory.*\.config/quickshell",
+    r"qt\.qpa\.wayland\.textinput",         # Qt 自己的输入法焦点提示
 ]
 
 
@@ -624,6 +625,12 @@ def main():
     if bad:
         md += ["```"] + bad[:60] + ["```"]
     (r.out / "summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    # 分支首页直接显示截图
+    readme = md + ["", "## 截图", ""]
+    for f in r.shots:
+        readme += [f"### {f}", "", f"![{f}](<{f}>)", ""]
+    readme += ["日志：[quickshell.log](quickshell.log) · [sway.log](sway.log)"]
+    (r.out / "README.md").write_text("\n".join(readme) + "\n", encoding="utf-8")
     print("\n".join(md))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
