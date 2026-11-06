@@ -146,6 +146,69 @@ Scope {
     function openFile(path) { Quickshell.execDetached(["xdg-open", path]); }
     function revealFile(path) { Quickshell.execDetached(["python3", helper, "reveal", path]); }
 
+    // ---- 编辑：同 Windows 长按 / 「用画图编辑」。编辑器存回原文件后刷新卡片缩略图 ----
+    property var thumbRevs: ({})
+    property int thumbTick: 0
+    property var editWatches: ({})
+
+    function thumbRev(path) { return thumbTick >= 0 ? (thumbRevs[path] || 0) : 0; }
+
+    function bumpThumb(path) {
+        thumbRevs[path] = (thumbRevs[path] || 0) + 1;
+        thumbTick++;
+        libraryTick++;
+        log("编辑后刷新 " + path);
+    }
+
+    function editFile(path) {
+        editJob.createObject(root, { file: path });
+        if (editWatches[path]) { editWatches[path].restartLife(); return; }
+        editWatches[path] = editWatch.createObject(root, { file: path });
+    }
+
+    Component {
+        id: editJob
+        Process {
+            id: editProc
+            property string file
+            running: true
+            command: ["python3", root.helper, "edit", file]
+            stdout: StdioCollector { onStreamFinished: if (text.trim() !== "") root.log("编辑器 " + text.trim()) }
+            stderr: StdioCollector { onStreamFinished: if (text.trim() !== "") root.log(text.trim()) }
+            onExited: editProc.destroy()
+        }
+    }
+
+    // 盯着图片所在的文件夹（编辑器常先写临时文件再改名），名字对上就刷新。一小时后不再盯
+    Component {
+        id: editWatch
+        Scope {
+            id: watchScope
+            property string file
+            readonly property string dirName: file.substring(0, file.lastIndexOf("/"))
+            readonly property string baseName: file.substring(file.lastIndexOf("/") + 1)
+            function restartLife() { life.restart(); }
+            Process {
+                running: true
+                command: ["python3", root.helper, "run", "inotifywait", "-m", "-q", "-e", "close_write,moved_to", "--format", "%f", watchScope.dirName]
+                stdout: SplitParser {
+                    onRead: line => { if (line === watchScope.baseName) settle.restart(); }
+                }
+            }
+            // 编辑器一次保存可能连写几下，停 300 毫秒再刷新
+            Timer { id: settle; interval: 300; onTriggered: root.bumpThumb(watchScope.file) }
+            Timer {
+                id: life
+                interval: 3600 * 1000
+                running: true
+                onTriggered: {
+                    delete root.editWatches[watchScope.file];
+                    watchScope.destroy();
+                }
+            }
+        }
+    }
+
     // 收藏移动之后绳上的路径要跟着改，否则卡片还指着旧文件。tick 为 false 时先不通知图库，一批做完再通知。
     function relocate(oldPath, newPath, tick) {
         if (newPath && oldPath !== newPath) {

@@ -59,6 +59,7 @@ Linux (Hyprland + Quickshell):
 
 - Settings window (library location with optional move, retention and 立即清理过期, 自动挂上, theme) matches the Windows one. The folder picker uses `zenity` or `kdialog` if installed; otherwise type the path.
 - No tray menu; expand, gallery and quit are triggered with `qs ipc` (see below) or from your bar or key bindings.
+- Press and hold a card (or right-click › 编辑) to edit: `$XITU_EDITOR` if set (path appended, or use `{}` as placeholder), else satty or swappy (saving back to the image), else `xdg-open`. The card refreshes after saving (needs `inotifywait`).
 - Drag cards to reorder. Rope and card colors (themes) can be switched over IPC without restarting.
 - Drag an image from a browser or file manager onto the top edge: the rope comes down and takes it in.
 
