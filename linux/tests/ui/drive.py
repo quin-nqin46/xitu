@@ -510,6 +510,8 @@ def scenario(r: Run):
         time.sleep(1.2)
         r.shot("slurp 框选层")
         r.pointer.drag(500, 380, 1300, 860)
+        time.sleep(0.3)
+        r.shot("截图飞向绳子")
         r.wait_log(r"\[xitu\] 挂上 ", 10, "截图挂上", count=before + 1)
         time.sleep(1.0)
         r.shot("截图挂上")
