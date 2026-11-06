@@ -91,6 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:latest
     timeout-minutes: 20
+    permissions:
+      contents: write   # 截图推到 ui-shots/* 分支，在网页上直接看
     steps:
       - name: Install packages
         run: |
@@ -104,6 +106,24 @@ jobs:
 
       - name: Drive the UI
         run: python linux/tests/ui/drive.py --out ui-shots
+
+      # 截图推到单独的分支（每次覆盖），GitHub 网页上打开就能看，不用下载 zip
+      - name: Publish screenshots to a branch
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          TOKEN: ${{ github.token }}
+          PR: ${{ github.event.number }}
+        shell: bash
+        run: |
+          [ -d ui-shots ] || exit 0
+          if [ -n "$PR" ]; then br="ui-shots/pr-$PR"; else br="ui-shots/${GITHUB_REF_NAME//\//-}"; fi
+          cd ui-shots
+          git init -q -b "$br"
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Linux UI screenshots for $GITHUB_SHA"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/$br"
+          echo "截图：https://github.com/${GITHUB_REPOSITORY}/tree/$br" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()
