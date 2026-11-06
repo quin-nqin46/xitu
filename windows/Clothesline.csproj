@@ -36,8 +36,8 @@
 
   <!-- 测试脚手架和发布输出不进主程序。 -->
   <ItemGroup>
-    <Compile Remove="_test/**;publish/**;tools/**;dist/**" />
-    <None Remove="_test/**;publish/**;tools/**;dist/**" />
+    <Compile Remove="_test/**;tests/**;publish/**;tools/**;dist/**" />
+    <None Remove="_test/**;tests/**;publish/**;tools/**;dist/**" />
     <Resource Include="Assets\xitu.ico" />
   </ItemGroup>
 
