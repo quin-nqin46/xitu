@@ -36,6 +36,20 @@ ShellRoot {
         return list.length > 0 ? list[0] : null;
     }
 
+    // 截图飞上绳子：交给框选起点所在那块屏的绳子；全屏或找不到屏时返回 false，由 core 直接挂
+    function flyCapture(shot) {
+        if (uiMode !== "rope") return false;
+        var list = ropes.instances;
+        for (var i = 0; i < list.length; i++) {
+            var s = list[i].modelData;
+            if (shot.x >= s.x && shot.x < s.x + s.width && shot.y >= s.y && shot.y < s.y + s.height)
+                return list[i].flyIn(shot);
+        }
+        return false;
+    }
+
+    Component.onCompleted: core.flyHandler = flyCapture
+
     function focusedUi() { return focusedIn(uiMode === "drawer" ? drawers.instances : ropes.instances); }
 
     // ---- 微风：7–16 秒一次 ----

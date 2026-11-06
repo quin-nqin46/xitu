@@ -44,6 +44,20 @@ public class ParityTests
     }
 
     [Fact]
+    public void FlightMatchesLinux()
+    {
+        // Layout.cs 依赖 WPF，不链接进测试，直接读源码里的常量
+        var cs = RepoFile(Path.Combine("windows", "Layout.cs"));
+        var js = RepoFile(Path.Combine("linux", "layout.js"));
+        foreach (var name in new[] { "FlightSeconds", "FlightArc" })
+        {
+            var m = Regex.Match(cs, @"const double " + name + @"\s*=\s*([0-9.]+)\s*;");
+            Assert.True(m.Success, "Layout.cs 里没有 " + name);
+            Assert.Equal(double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), JsNumber(js, name));
+        }
+    }
+
+    [Fact]
     public void CollectModesMatchLinux()
     {
         var py = RepoFile(Path.Combine("linux", "xitu_helper.py"));
