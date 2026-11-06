@@ -1,0 +1,3 @@
+00:00:00.018 [ERROR] [wlr] [xwayland/server.c:473] Cannot find Xwayland binary "/usr/bin/Xwayland"
+00:00:00.018 [ERROR] [sway/server.c:766] Failed to start Xwayland
+2026-11-06 08:59:20 - [swaybg-1.2.2/main.c:332] Found config HEADLESS-1 for output HEADLESS-1 ((null))
