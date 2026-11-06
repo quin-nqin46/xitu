@@ -16,6 +16,7 @@ internal sealed class TrayController : IDisposable
     private readonly WinForms.ToolStripMenuItem _capture2;
     private readonly WinForms.ToolStripMenuItem _header;
     private readonly WinForms.ToolStripMenuItem _startup;
+    private readonly WinForms.ToolStripMenuItem _themes;
     private readonly WinForms.ToolStripMenuItem _exit;
 
     public TrayController(Line line, ScreenHost screens, Action capture, Action openGallery, Action openSettings)
@@ -29,6 +30,9 @@ internal sealed class TrayController : IDisposable
         _clear = new WinForms.ToolStripMenuItem("清空绳子", null, (_, _) => _line.Clear());
         _capture2 = new WinForms.ToolStripMenuItem("截图", null, (_, _) => _capture());
         _header = TrayMenuStyle.Header("系图");
+        _themes = new WinForms.ToolStripMenuItem("换主题");
+        _themes.DropDownItems.Add(new WinForms.ToolStripMenuItem("…")); // 打开菜单时按 ThemeStore.List 重建
+        if (_themes.DropDown is WinForms.ToolStripDropDownMenu themeMenu) TrayMenuStyle.ApplyDropDown(themeMenu);
         _startup = new WinForms.ToolStripMenuItem("开机自启", null, (_, _) => Autostart.SetEnabled(!Autostart.IsEnabled()));
         _exit = new WinForms.ToolStripMenuItem("退出", null, (_, _) => System.Windows.Application.Current.Shutdown());
 
@@ -42,6 +46,7 @@ internal sealed class TrayController : IDisposable
         menu.Items.Add(_toggle);
         menu.Items.Add(_clear);
         menu.Items.Add(new WinForms.ToolStripSeparator());
+        menu.Items.Add(_themes);
         menu.Items.Add(new WinForms.ToolStripMenuItem("设置…", null, (_, _) => _openSettings()));
         menu.Items.Add(_startup);
         menu.Items.Add(new WinForms.ToolStripSeparator());
@@ -78,6 +83,24 @@ internal sealed class TrayController : IDisposable
         _header.Text = _line.Count == 0 ? "系图 · 绳上空着" : $"系图 · 绳上 {_line.Count} 张";
         _clear.Enabled = _line.Count > 0;
         _startup.Checked = Autostart.IsEnabled();
+        RefreshThemes();
+    }
+
+    /// 内置主题和 %LOCALAPPDATA%\Xitu\themes 里的都列出来，当前的打勾。同 Linux 绳子右键「换主题」。
+    private void RefreshThemes()
+    {
+        _themes.DropDownItems.Clear();
+        var current = ThemeStore.Current.Id;
+        foreach (var (id, name) in ThemeStore.List())
+        {
+            var themeId = id;
+            var item = new WinForms.ToolStripMenuItem(name, null, (_, _) => ThemeStore.Set(themeId))
+            {
+                Checked = id == current,
+            };
+            TrayMenuStyle.Item(item);
+            _themes.DropDownItems.Add(item);
+        }
     }
 
 

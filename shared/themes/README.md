@@ -1,6 +1,8 @@
 # 系图主题
 
-一根绳子的外观（颜色、线宽、绳端、夹子、相框、空绳提示）放在一个 JSON 文件里。几何和物理不在这里：照片间距、卡片宽度、照片最大高度、绳子下垂、弹簧，仍在 `linux/layout.js`。
+一根绳子的外观（颜色、线宽、绳端、夹子、相框、空绳提示）放在一个 JSON 文件里。Windows 和 Linux 都读这个目录（Windows 打包进程序，见 `windows/Clothesline.csproj`）。几何和物理不在这里：照片间距、卡片宽度、照片最大高度、绳子下垂、弹簧，在 `linux/layout.js` 和 `windows/Layout.cs`。
+
+Windows 上自己的主题放 `%LOCALAPPDATA%\Xitu\themes\<id>.json`，在托盘菜单「换主题」里切换。
 
 内置主题在这个目录，文件名就是 id（`polaroid-blue.json`）。自己的主题放到 `~/.local/share/Xitu/themes/<id>.json`，id 相同的话用你的那份。id 只用字母、数字、`-` 和 `_`。
 

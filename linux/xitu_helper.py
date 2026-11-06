@@ -741,9 +741,12 @@ def cmd_reveal(path):
     return 0
 
 
-BUILTIN_THEMES = Path(__file__).resolve().parent / "themes"
+# 内置主题和 Windows 版共用一份：仓库根目录 shared/themes。只拷了 linux/ 目录的安装退回 linux/themes。
+_HERE = Path(__file__).resolve().parent
+BUILTIN_THEMES = next((d for d in (_HERE.parent / "shared" / "themes", _HERE / "themes") if d.is_dir()),
+                      _HERE.parent / "shared" / "themes")
 THEME_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
-# 缺字段时补这套。和 themes/polaroid-blue.json 一致；那个文件读不了才用到这里。
+# 缺字段时补这套。和 shared/themes/polaroid-blue.json 一致；那个文件读不了才用到这里。
 THEME_FALLBACK = {
     "name": "主题蓝绳 + 拍立得",
     "accent": "#3D6FE0",

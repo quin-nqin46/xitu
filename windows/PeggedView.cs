@@ -26,6 +26,7 @@ internal sealed class PeggedView : Canvas
     private readonly ScaleTransform _starScale = new(1, 1);
     private readonly RotateTransform _rotate = new();
     private readonly SoftShadow _shadow;
+    private readonly Clothespin _pin;
     private readonly GrabSession _grab;
     private bool _favorite;
     private bool _crossOn;
@@ -81,21 +82,22 @@ internal sealed class PeggedView : Canvas
             Stretch = Stretch.Fill,
             IsHitTestVisible = false,
         };
-        _clip = new RectangleGeometry(new Rect(0, 0, photo.Width, photo.Height), Layout.PhotoRadius, Layout.PhotoRadius);
+        var look = ThemeStore.Current;
+        _clip = new RectangleGeometry(new Rect(0, 0, photo.Width, photo.Height), look.Frame.PhotoRadius, look.Frame.PhotoRadius);
         _image.Clip = _clip;
 
         _frame = new Border
         {
-            Width = photo.Width + Layout.FrameInset * 2,
-            Height = photo.Height + Layout.FrameInset * 2,
-            CornerRadius = new CornerRadius(Layout.FrameRadius),
-            Padding = new Thickness(Layout.FrameInset),
-            Background = Theme.CardBrush,
+            Width = photo.Width + look.Frame.PadLeft + look.Frame.PadRight,
+            Height = photo.Height + look.Frame.PadTop + look.Frame.PadBottom,
+            CornerRadius = new CornerRadius(look.Frame.Radius),
+            Padding = new Thickness(look.Frame.PadLeft, look.Frame.PadTop, look.Frame.PadRight, look.Frame.PadBottom),
+            Background = ThemeStore.Brush(look.Frame.Paper),
             BorderThickness = new Thickness(0),
             Child = _image,
             IsHitTestVisible = false,
         };
-        _shadow = new SoftShadow(_frame.Width, _frame.Height, Layout.FrameRadius, blur: 14, depth: 6, opacity: 0.35);
+        _shadow = new SoftShadow(_frame.Width, _frame.Height, look.Frame.Radius, blur: 14, depth: 6, opacity: 0.35);
 
         _cross = new Border
         {
@@ -183,14 +185,10 @@ internal sealed class PeggedView : Canvas
             Children = { _shadow, _frame, _cross, _copied, _starHost },
         };
 
-        var pin = new Clothespin { IsHitTestVisible = false };
-        SetLeft(pin, (Layout.CardWidth - pin.Width) / 2);
-        SetTop(pin, 0);
-        SetLeft(_card, (Layout.CardWidth - _card.Width) / 2);
-        SetTop(_card, Clothespin.HeightDip - 12);
-        Children.Add(pin);
+        _pin = new Clothespin { IsHitTestVisible = false };
+        Children.Add(_pin);
         Children.Add(_card);
-        Height = Clothespin.HeightDip - 12 + _card.Height;
+        Fit();
 
         RenderTransformOrigin = new Point(0.5, 0);
         RenderTransform = _rotate;
@@ -249,18 +247,42 @@ internal sealed class PeggedView : Canvas
 
     public void RefreshThumb()
     {
-        var photo = Layout.PhotoSize(Item.PixelWidth, Item.PixelHeight);
         _image.Source = Item.Thumb;
+        Fit();
+        RefreshFavorite(animate: false);
+    }
+
+    /// 换了主题：夹子、相框颜色和尺寸都跟着变。
+    public void ApplyTheme()
+    {
+        _pin.ApplyTheme();
+        Fit();
+    }
+
+    /// 按当前主题和照片尺寸摆夹子和相框。几何同 Linux 版 Card.qml。
+    private void Fit()
+    {
+        var look = ThemeStore.Current;
+        var f = look.Frame;
+        var photo = Layout.PhotoSize(Item.PixelWidth, Item.PixelHeight);
         _image.Width = photo.Width;
         _image.Height = photo.Height;
         _clip.Rect = new Rect(0, 0, photo.Width, photo.Height);
-        _frame.Width = photo.Width + Layout.FrameInset * 2;
-        _frame.Height = photo.Height + Layout.FrameInset * 2;
+        _clip.RadiusX = f.PhotoRadius;
+        _clip.RadiusY = f.PhotoRadius;
+        _frame.Width = photo.Width + f.PadLeft + f.PadRight;
+        _frame.Height = photo.Height + f.PadTop + f.PadBottom;
+        _frame.Padding = new Thickness(f.PadLeft, f.PadTop, f.PadRight, f.PadBottom);
+        _frame.CornerRadius = new CornerRadius(f.Radius);
+        _frame.Background = ThemeStore.Brush(f.Paper);
+        _shadow.Resize(_frame.Width, _frame.Height, f.Radius, 14);
         _card.Width = _frame.Width;
         _card.Height = _frame.Height;
+        SetLeft(_pin, (Layout.CardWidth - _pin.Width) / 2);
+        SetTop(_pin, 0);
         SetLeft(_card, (Layout.CardWidth - _card.Width) / 2);
-        Height = Clothespin.HeightDip - 12 + _card.Height;
-        RefreshFavorite(animate: false);
+        SetTop(_card, look.FrameTop);
+        Height = look.FrameTop + _card.Height;
     }
 
     public void RefreshFavorite(bool animate)
@@ -549,21 +571,41 @@ internal sealed class PeggedView : Canvas
     }
 }
 
+/// 夹子：按主题的 clip 画，压在相框上沿下面。同 Linux 版 Card.qml 的 clip。
 internal sealed class Clothespin : Grid
 {
-    public const double HeightDip = 28;
-
     public Clothespin()
     {
-        Width = 10;
-        Height = HeightDip;
-        Children.Add(new SoftShadow(10, HeightDip, 2, blur: 2, depth: 1.5, opacity: 0.28));
+        ApplyTheme();
+    }
+
+    public void ApplyTheme()
+    {
+        var c = ThemeStore.Current.Clip;
+        Children.Clear();
+        Width = c.Width;
+        Height = c.Height;
+        if (c.Shadow)
+            Children.Add(new SoftShadow(c.Width, c.Height, c.Radius, blur: 3, depth: 2, opacity: 0.25));
         Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(2),
-            Background = Theme.WoodBrush,
-            BorderThickness = new Thickness(1),
-            BorderBrush = Theme.WoodStrokeBrush,
+            CornerRadius = new CornerRadius(c.Radius),
+            Background = ThemeStore.Brush(c.Color),
+            BorderThickness = new Thickness(c.Border.IsTransparent ? 0 : 1),
+            BorderBrush = c.Border.IsTransparent ? null : ThemeStore.Brush(c.Border),
         });
+        if (!c.Highlight.IsTransparent)
+        {
+            Children.Add(new Border
+            {
+                Width = c.HighlightWidth,
+                Height = Math.Min(c.HighlightHeight, c.Height),
+                CornerRadius = new CornerRadius(c.HighlightRadius),
+                Background = ThemeStore.Brush(c.Highlight),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                RenderTransform = new TranslateTransform(c.HighlightShift, 0),
+            });
+        }
     }
 }
