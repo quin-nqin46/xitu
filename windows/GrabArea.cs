@@ -84,6 +84,9 @@ internal sealed class GrabSession
         };
 
         var menu = new ContextMenu();
+        // 菜单项和顺序与 Linux 版 Card.qml 一致
+        menu.Items.Add(Item("打开图库", () => GalleryWindow.Launcher?.Invoke()));
+        menu.Items.Add(new Separator());
         menu.Items.Add(Item("复制", Copy));
         menu.Items.Add(Item("打开", Open));
         menu.Items.Add(Item("用画图编辑", Edit));

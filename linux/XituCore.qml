@@ -116,6 +116,17 @@ Scope {
         save();
     }
 
+    // 清空绳子（Windows 托盘「清空绳子」）。文件留在图库。
+    function clear() {
+        var live = livePaths();
+        if (live.length === 0) return;
+        for (var i = 0; i < lineModel.count; i++)
+            if (!lineModel.get(i).gone) takeOff(i);
+        version++;
+        save();
+        log("清空绳子");
+    }
+
     function moveEntry(id, slot) {
         var from = indexOfId(id);
         if (from < 0) return;
@@ -207,8 +218,10 @@ Scope {
         Process {
             property string file
             property string source
+            property bool fromFolder: false
             running: true
-            command: ["python3", root.helper, "import", file, source]
+            command: fromFolder ? ["python3", root.helper, "auto-import", file]
+                          : ["python3", root.helper, "import", file, source]
             stdout: StdioCollector {
                 onStreamFinished: {
                     var p = text.trim();
@@ -222,8 +235,8 @@ Scope {
         }
     }
 
-    function importFile(file, source) {
-        importJob.createObject(root, { file: file, source: source });
+    function importFile(file, source, fromFolder) {
+        importJob.createObject(root, { file: file, source: source, fromFolder: !!fromFolder });
     }
 
     Component {
@@ -360,7 +373,8 @@ Scope {
         command: ["python3", root.helper, "run", "sh", "-c", "d=$(python3 \"$1\" screenshot-dir) && mkdir -p \"$d\" && exec inotifywait -m -q -e close_write,moved_to --format '%w%f' \"$d\"", "sh", root.helper]
         stdout: SplitParser {
             onRead: line => {
-                if (/\.(png|jpe?g|webp)$/i.test(line)) root.importFile(line, "截图");
+                // 走 auto-import：设置 Collect 为 own 时助手不收
+                if (/\.(png|jpe?g|webp)$/i.test(line)) root.importFile(line, "截图", true);
             }
         }
         onExited: restartFolder.start()
@@ -409,6 +423,35 @@ Scope {
         }
     }
 
+    // ---- 过期清理：同 Windows 版 Retention.cs，启动 1 分钟后一次，之后每 6 小时 ----
+    Timer {
+        id: sweepTimer
+        interval: 60 * 1000
+        running: root.restored
+        repeat: true
+        onTriggered: {
+            interval = 6 * 3600 * 1000;
+            if (sweepProc.running) return;
+            sweepProc.command = ["python3", root.helper, "sweep"].concat(root.livePaths());
+            sweepProc.running = true;
+        }
+    }
+    Process {
+        id: sweepProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var n = parseInt(text.trim());
+                if (n > 0) {
+                    root.log("清理过期 " + n + " 张");
+                    root.libraryTick++;
+                }
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") root.log(text.trim());
+        }
+    }
+
     // 打开图库文件夹。Quickshell 0.3.2 的 SystemTray 只能显示别人的托盘项，发不出自己的。
     Process {
         id: libRoot
@@ -427,6 +470,7 @@ Scope {
         target: "xitu"
         function toggle(): void { root.toggleRequested(); }
         function peek(): void { root.peekRequested(); }
+        function clear(): void { root.clear(); }
         function hang(path: string): void { root.importFile(path, "文件"); }
         function openLibrary(): void { root.openLibrary(); }
         function gallery(): void { root.openGallery(); }
