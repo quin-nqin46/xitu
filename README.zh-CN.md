@@ -36,7 +36,8 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 | 路径 | 内容 |
 |---|---|
 | `windows/` | Windows 源码（`Clothesline.csproj`，WPF；`Assets/`、`Capture/`、`tools/make-icon/`） |
-| `linux/` | Linux 源码（Quickshell 壳：QML、`xitu_helper.py`、主题 JSON） |
+| `linux/` | Linux 源码（Quickshell 壳：QML、`xitu_helper.py`） |
+| `shared/themes/` | 绳子主题（JSON），Windows 和 Linux 都读这一份 |
 | `docs/` | 演示图 |
 | `LICENSE`、`NOTICE` | 许可与致谢 |
 
@@ -54,6 +55,7 @@ Windows：
 
 - 托盘菜单，每屏一条绳，从顶边滑出。
 - 默认全局热键 Ctrl+Shift+A：框选、点窗口或按 Enter 整屏，照片飞上绳。
+- 绳子主题：托盘菜单 › 换主题。和 Linux 用同一份主题文件（`shared/themes/`），默认是蓝绳 + 拍立得，原来的红绳留作「红绳」主题。自己的主题放 `%LOCALAPPDATA%\Xitu\themes\<id>.json`。
 - 长按用画图编辑。把照片拖出绳子只复制，照片留在绳上。
 
 Linux（Hyprland + Quickshell）：
@@ -139,7 +141,7 @@ IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`�
 系图用 `qs -p linux` 就能独立运行，不依赖 Caelestia。
 
 - 抽屉配色：`drawer` 模式下，抽屉实时读取 Caelestia 的配色文件 `${XDG_STATE_HOME:-~/.local/state}/caelestia/scheme.json`；没有这个文件时用内置的一套深色。（`linux/ThemeEngine.qml`）
-- 绳子主题：`linux/themes/caelestia.json` 是按 Caelestia 配色做的一套绳子主题，用 `qs ipc -p linux call xitu setTheme caelestia` 切换。
+- 绳子主题：`shared/themes/caelestia.json` 是按 Caelestia 配色做的一套绳子主题，用 `qs ipc -p linux call xitu setTheme caelestia` 切换。
 - 嵌入：后台逻辑单独放在 `linux/XituCore.qml`，与窗口分开，别的 Quickshell 外壳（比如 Caelestia 的配置）可以自己承载抽屉。这样用时，只有 `rope` 模式还需要本进程。
 
 绳子主题里颜色写成 `accent` 的部分，可以跟随桌面外壳的强调色：用两个环境变量指向外壳提供的文件。任一个没设或读不到，就用主题自带的强调色（默认 `#3D6FE0`）。
@@ -156,7 +158,7 @@ Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注�
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | 绳上条目（与 Windows 版同格式） | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | 设置（`ui`、`Theme`、`LibraryPath`、`RetentionDays`、`Collect` 等） | `linux/xitu_helper.py`；`linux/shell.qml` 从同一个文件读 `ui` 字段 |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | 助手日志 | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | 自定义主题（id 相同则覆盖内置） | `linux/themes/README.md` |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | 自定义主题（id 相同则覆盖内置） | `shared/themes/README.md` |
 | 图库根目录 | `xdg-user-dir PICTURES`（取不到时用 `~/Pictures`）下的 `系图/`，可用 `LibraryPath` 改 | `linux/xitu_helper.py` |
 | 截图文件夹 | 监听新截图：设了 `$XITU_SCREENSHOT_DIR` 就用它，否则是「图片」目录下的 `Screenshots/`（已有 `屏幕截图/` 时用它） | `linux/xitu_helper.py`（`screenshot-dir`） |
 

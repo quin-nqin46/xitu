@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// 主题：内置 linux/themes/<id>.json，用户 ~/.local/share/Xitu/themes/<id>.json（同 id 用户优先）。
+// 主题：内置 shared/themes/<id>.json（和 Windows 版共用），用户 ~/.local/share/Xitu/themes/<id>.json（同 id 用户优先）。
 // 颜色字面量在这里解析。"accent" 可以跟着一份外部 qml 里的 activeWorkspaceBackground，明暗看另一份
 // env 的 theme=（环境变量 XITU_ACCENT_QML / XITU_ACCENT_STATE）；两个都没设或读不到，用主题里的 accent（默认 #3D6FE0）。
 // "accent-strong" 用同一色相，饱和度不低于 0.65，HSL 亮度高于 0.52 时压到 0.52。

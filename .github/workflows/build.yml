@@ -30,6 +30,25 @@ jobs:
       - name: Unit tests
         run: dotnet test windows/tests/Xitu.Tests/Xitu.Tests.csproj -c Release --logger "console;verbosity=normal"
 
+      # 没有 Windows 机器也能看 Windows 版长什么样：每个主题画一张挂着示例图的绳子
+      - name: Render theme previews
+        shell: pwsh
+        run: |
+          $exe = "windows/bin/Release/net8.0-windows/Xitu.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "--render-themes", "$PWD/theme-previews" -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Error "渲染超时" }
+          Get-Content "$env:LOCALAPPDATA/Xitu/log.txt" -ErrorAction SilentlyContinue
+          $n = (Get-ChildItem theme-previews -Filter *.png).Count
+          Write-Host "预览 $n 张"
+          if ($n -eq 0) { Write-Error "没有生成预览" }
+          if (Select-String -Path "$env:LOCALAPPDATA/Xitu/log.txt" -Pattern " ERROR " -Quiet) { Write-Error "运行日志里有 ERROR" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: theme-previews
+          path: theme-previews/*.png
+          retention-days: 14
+
       - name: Build icon tool
         run: dotnet build windows/tools/make-icon/MakeIcon.csproj -c Release
 

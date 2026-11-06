@@ -67,6 +67,8 @@ internal sealed class AppSettings
     /// 自动收哪些图："all" | "screenshots" | "own"，见 <see cref="CollectMode"/>。Linux 版读同名字段 Collect。
     public string Collect { get; set; } = CollectMode.All;
     public string LibraryPath { get; set; } = "";
+    /// 绳子主题 id，见 shared/themes。Linux 版读同名字段。
+    public string Theme { get; set; } = ThemeSpec.DefaultId;
     public int RetentionDays { get; set; } = 30;
     public double GalleryLeft { get; set; } = double.NaN;
     public double GalleryTop { get; set; } = double.NaN;
@@ -93,6 +95,7 @@ internal sealed class AppSettings
                 CopyToClipboard = dto.CopyToClipboard,
                 Collect = CollectMode.Normalize(dto.Collect),
                 LibraryPath = dto.LibraryPath ?? "",
+                Theme = ThemeSpec.IsValidId(dto.Theme) ? dto.Theme! : ThemeSpec.DefaultId,
                 RetentionDays = dto.RetentionDays ?? 30,
                 GalleryLeft = dto.GalleryLeft ?? double.NaN,
                 GalleryTop = dto.GalleryTop ?? double.NaN,
@@ -123,9 +126,11 @@ internal sealed class AppSettings
                 CopyToClipboard = CopyToClipboard,
                 Collect = Collect,
                 LibraryPath = LibraryPath,
+                Theme = Theme,
                 RetentionDays = RetentionDays,
-                GalleryLeft = GalleryLeft,
-                GalleryTop = GalleryTop,
+                // 没摆过图库窗口时是 NaN；JSON 写不了 NaN，整个 settings.json 会写失败，存成 null
+                GalleryLeft = double.IsFinite(GalleryLeft) ? GalleryLeft : null,
+                GalleryTop = double.IsFinite(GalleryTop) ? GalleryTop : null,
                 GalleryWidth = GalleryWidth,
                 GalleryHeight = GalleryHeight,
             };
@@ -151,6 +156,7 @@ internal sealed class AppSettings
         public bool CopyToClipboard { get; set; } = true;
         public string? Collect { get; set; }
         public string? LibraryPath { get; set; }
+        public string? Theme { get; set; }
         public int? RetentionDays { get; set; }
         public double? GalleryLeft { get; set; }
         public double? GalleryTop { get; set; }

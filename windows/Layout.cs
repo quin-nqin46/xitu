@@ -75,17 +75,21 @@ internal static class Layout
         return new Size(pixelWidth * scale, pixelHeight * scale);
     }
 
+    /// 夹子顶在绳子上方多少（主题 clip.above）。卡片摆放的纵向基准。
+    public static double ClipAbove => ThemeStore.Current.Clip.Above;
+
     /// 卡片在绳子视图里的位置（不含夹子），和 PeggedView 的摆放一致。
     public static Rect CardRect(int index, int count, double width, double pixelWidth, double pixelHeight)
     {
         var x = X(index, count, width);
         var pegLeft = x - CardWidth / 2;
-        var pegTop = RopeY(x, width) - PinAbove;
+        var look = ThemeStore.Current;
+        var pegTop = RopeY(x, width) - look.Clip.Above;
         var photo = PhotoSize(pixelWidth, pixelHeight);
-        var cardW = photo.Width + FrameInset * 2;
-        var cardH = photo.Height + FrameInset * 2;
+        var cardW = photo.Width + look.Frame.PadLeft + look.Frame.PadRight;
+        var cardH = photo.Height + look.Frame.PadTop + look.Frame.PadBottom;
         var cardLeft = pegLeft + (CardWidth - cardW) / 2;
-        var cardTop = pegTop + Clothespin.HeightDip - 12;
+        var cardTop = pegTop + look.FrameTop;
         return new Rect(cardLeft, cardTop, cardW, cardH);
     }
 
