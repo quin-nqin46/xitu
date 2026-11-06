@@ -43,7 +43,7 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 两边共有：
 
 - 截图文件夹和剪贴板里出现的截图自动挂上。浏览器里「复制图片」也会挂上。和表格、文字、文件一起复制的位图不挂。
-- 自动挂哪些由 `settings.json` 的 `Collect` 决定（两边都在 设置 › 自动挂上；Linux 从图库左下角「设置…」、绳子空白处右键菜单，或 `qs ipc … call xitu settings` 打开设置）：`all`（默认，截图和复制的图片）、`screenshots`（只要截图，复制的图片不挂）、`own`（只要系图自己截的图，截图文件夹和剪贴板都不看；Linux 还没有自带截图，所以 Linux 上选 own 目前不会自动挂任何图）。拖进来的图总会挂上。
+- 自动挂哪些由 `settings.json` 的 `Collect` 决定（两边都在 设置 › 自动挂上；Linux 从图库左下角「设置…」、绳子空白处右键菜单，或 `qs ipc … call xitu settings` 打开设置）：`all`（默认，截图和复制的图片）、`screenshots`（只要截图，复制的图片不挂）、`own`（只要系图自己截的图，截图文件夹和剪贴板都不看）。拖进来的图总会挂上。
 - 单击复制，双击打开；悬停点叉取下，文件留在图库。
 - 取下时照片落下；绳子模式里照片轻摆，偶尔有微风。
 - 图库窗口保存挂过的所有照片。
@@ -129,7 +129,15 @@ qs -p linux
 qs ipc -p linux call xitu toggle
 ```
 
-IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`settings`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
+自带截图，对应 Windows 的 Ctrl+Shift+A（需要 `grim` 和 `slurp`；拖一块、点一个窗口，或点一块屏幕）。在 Hyprland 里绑键：
+
+```
+bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture
+```
+
+截到的图进图库、挂上绳子，`CopyToClipboard` 没设成 `false` 时也会复制。没装 grim / slurp 时会弹通知，请改用系统截图键（存进截图文件夹的图照样会挂上）。
+
+IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`settings`、`capture`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
 
 ## 可选：与 Caelestia 整合
 
