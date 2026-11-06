@@ -8,7 +8,7 @@ internal static class Layout
     public const double PanelHeight = 210;
     public const double RopeTop = 10;
     public const double Spacing = LineCapacity.Spacing;
-    public const double CardWidth = 150;
+    public const double CardWidth = LineCapacity.CardWidth;
     public const double PinAbove = 9.5;
     public const double FrameRadius = 10;
     public const double FrameInset = 5;
@@ -16,9 +16,6 @@ internal static class Layout
     public const double TuckGap = 12;
     public const double RevealMs = 350;
     public const double HideMs = 220;
-
-    /// 顶边热区高度（DIP）。Windows 没有菜单栏，用一条贴着屏幕顶边的窄带代替。
-    public const double TopBandDip = 20;
 
     public const int MinItems = LineCapacity.MinItems;
     public const int MaxItemsCap = LineCapacity.MaxItemsCap;

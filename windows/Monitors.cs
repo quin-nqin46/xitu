@@ -11,11 +11,14 @@ internal sealed class MonitorDesc
 
     public bool Contains(int x, int y) => Bounds.Contains(x, y);
 
-    public bool InTopBand(int x, int y)
+    /// 指针在不在这块屏的顶边感应段上：贴着顶边几像素高、只在中间挂照片的那一段（TriggerZone）。
+    public bool InTopBand(int x, int y, int count)
     {
-        if (x < Bounds.Left || x >= Bounds.Right) return false;
-        var band = Math.Max(16, (int)Math.Round(Layout.TopBandDip * Scale));
-        return y >= Bounds.Top && y < Bounds.Top + band;
+        if (!Contains(x, y)) return false;
+        var widthDip = (Bounds.Right - Bounds.Left) / Scale;
+        // 至少 3 个物理像素，高缩放下也好碰到
+        var bandDip = Math.Max(TriggerZone.BandDip, 3 / Scale);
+        return TriggerZone.Contains(count, widthDip, (x - Bounds.Left) / Scale, (y - Bounds.Top) / Scale, bandDip);
     }
 }
 
