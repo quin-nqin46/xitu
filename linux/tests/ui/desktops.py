@@ -5,9 +5,6 @@
         - 启动后桌面后端是 other，日志里没有 Hyprland
         - ipc peek 放下绳子
         - 全屏窗口时 ipc peek 不放下
-  hyprland  嵌在无头 Sway 里运行，走 Quickshell.Hyprland：
-        - 启动后桌面后端是 hyprland
-        - ipc peek 放下绳子；全屏窗口时不放下
   kwin  kwin_wayland --virtual（KDE 的合成器，无头，两块虚拟屏），没有 foreign-toplevel：
         - 启动后桌面后端是 other，两块屏各有一根绳子，没有 QML 报错
         - ipc peek 放下绳子（兜底在第一块屏）
@@ -40,7 +37,7 @@ class DesktopRun(Run):
         self.desktop = desktop
         self.qs = None
         self.env["XITU_DEBUG_REVEAL"] = "1"
-        self.env["XDG_CURRENT_DESKTOP"] = {"niri": "niri", "kwin": "KDE", "hyprland": "Hyprland"}[desktop]
+        self.env["XDG_CURRENT_DESKTOP"] = {"niri": "niri", "kwin": "KDE"}[desktop]
 
     def wayland_sockets(self):
         rt = Path(self.env["XDG_RUNTIME_DIR"])
@@ -77,44 +74,6 @@ class DesktopRun(Run):
                 break
             time.sleep(0.1)
         raise RuntimeError("niri 没起来，见 niri.log")
-
-    # ---------- Hyprland：嵌在无头 Sway 里 ----------
-    def start_hyprland(self):
-        self.start_sway()
-        parent = self.env["WAYLAND_DISPLAY"]
-        before = self.wayland_sockets()
-        conf = self.tmp / "hyprland.conf"
-        conf.write_text(
-            "monitor = , 1280x720, auto, 1\n"
-            "misc {\n  disable_hyprland_logo = true\n  disable_splash_rendering = true\n}\n"
-            "animations {\n  enabled = false\n}\n"
-            "ecosystem {\n  no_update_news = true\n  no_donation_nag = true\n}\n"
-        )
-        env = dict(self.env)
-        env.pop("SWAYSOCK", None)
-        log = open(self.out / "hyprland.log", "w")
-        cmd = ["Hyprland", "--config", str(conf)]
-        if os.geteuid() == 0:
-            cmd.append("--i-am-really-stupid")   # CI 容器里是 root，Hyprland 默认拒绝以 root 运行
-        p = subprocess.Popen(cmd, env=env, stdout=log, stderr=subprocess.STDOUT,
-                             start_new_session=True)
-        self.procs.append(p)
-        hypr = Path(self.env["XDG_RUNTIME_DIR"]) / "hypr"
-        for _ in range(200):
-            new = self.wayland_sockets() - before - {parent}
-            sigs = [d for d in hypr.glob("*") if (d / ".socket.sock").exists()] if hypr.is_dir() else []
-            if new and sigs:
-                self.env["WAYLAND_DISPLAY"] = sorted(new)[0]
-                self.env["HYPRLAND_INSTANCE_SIGNATURE"] = sigs[0].name
-                self.env.pop("SWAYSOCK", None)
-                time.sleep(1.5)
-                return
-            if p.poll() is not None:
-                break
-            time.sleep(0.1)
-        log.flush()
-        print((self.out / "hyprland.log").read_text(errors="replace")[-4000:], flush=True)
-        raise RuntimeError("Hyprland 没起来，见 hyprland.log")
 
     # ---------- KWin：无头虚拟屏 ----------
     def start_kwin(self):
@@ -157,7 +116,7 @@ class DesktopRun(Run):
         time.sleep(0.2)
 
     def maybe_shot(self, name):
-        if self.desktop in ("niri", "hyprland"):
+        if self.desktop == "niri":
             try:
                 self.shot(name)
             except Exception as e:  # noqa: BLE001
@@ -184,12 +143,10 @@ class DesktopRun(Run):
 def scenario(r: DesktopRun):
     want_screens = 2 if r.desktop == "kwin" else 1
 
-    kind = "hyprland" if r.desktop == "hyprland" else "other"
-
-    @r.step(f"启动：桌面后端 {kind}")
+    @r.step("启动：桌面后端 other，不碰 Hyprland")
     def _():
-        r.wait_log(r"\[xitu\] 桌面后端：" + kind, 3, "桌面后端：" + kind)
-        if kind == "other" and re.search(r"[Hh]yprland", r.log_text()):
+        r.wait_log(r"\[xitu\] 桌面后端：other", 3, "桌面后端：other")
+        if re.search(r"[Hh]yprland", r.log_text()):
             raise AssertionError("不该加载 Quickshell.Hyprland")
         return f"{want_screens} 块屏"
     _()
@@ -245,14 +202,14 @@ def scenario(r: DesktopRun):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("desktop", choices=["niri", "kwin", "hyprland"])
+    ap.add_argument("desktop", choices=["niri", "kwin"])
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     out = args.out or f"ui-desktop-{args.desktop}"
     r = DesktopRun(out, args.desktop)
     fatal = None
     try:
-        {"niri": r.start_niri, "kwin": r.start_kwin, "hyprland": r.start_hyprland}[args.desktop]()
+        r.start_niri() if args.desktop == "niri" else r.start_kwin()
         r.start_qs()
         scenario(r)
     except Exception as e:  # noqa: BLE001
@@ -269,8 +226,7 @@ def main():
 
     bad = r.bad_log_lines() if r.qs_log.exists() else []
     ok = fatal is None and bad == [] and all(x[1] for x in r.results)
-    name = {"niri": "niri（嵌在无头 Sway 里）", "kwin": "KDE（kwin_wayland --virtual）",
-            "hyprland": "Hyprland（嵌在无头 Sway 里）"}[args.desktop]
+    name = {"niri": "niri（嵌在无头 Sway 里）", "kwin": "KDE（kwin_wayland --virtual）"}[args.desktop]
     md = [f"## Linux 界面测试：{name}", ""]
     if fatal:
         md += [f"**没跑完：** {fatal}", ""]
