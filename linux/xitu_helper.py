@@ -28,7 +28,8 @@
   theme-next             切到列表里的下一个主题，并输出主题 JSON
   save-as <路径> [目标]   另存一份（同 Windows 右键「另存为…」）：没给目标就用 zenity / kdialog 问，
                          输出保存位置；取消时不输出，没有对话框工具时退出码 3
-  capture                自带截图：slurp 框选（拖一块、点窗口、点屏幕），grim 截下进图库，输出路径；
+  capture                自带截图：slurp 框选（拖一块、点窗口、点屏幕），grim 截下进图库，
+                         输出一行 JSON：path 和框选位置 x/y/w/h（飞上绳子的起点）；
                          CopyToClipboard 开着（默认）就同时复制。取消时不输出；没装 grim / slurp 时退出码 3
   edit <路径>            用编辑器打开系图自己的文件：$XITU_EDITOR，否则 satty / swappy（存回原文件），否则 xdg-open。
                          输出编辑器名字，不等编辑器退出
@@ -1289,8 +1290,22 @@ def cmd_capture():
             cmd_copy(str(dest))
         except Exception as e:
             log(f"截图复制失败：{e}")
-    print(Path(dest).resolve())
+    out = {"path": str(Path(dest).resolve())}
+    box = parse_geometry(geom)
+    if box:
+        out.update(box)
+    json.dump(out, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
     return 0
+
+
+def parse_geometry(geom):
+    """slurp 的「x,y wxh」→ {x, y, w, h}（全局逻辑坐标），界面拿它从框选处起飞。读不懂返回 None。"""
+    m = re.match(r"^\s*(-?\d+),(-?\d+)\s+(\d+)x(\d+)", geom or "")
+    if not m:
+        return None
+    x, y, w, h = (int(v) for v in m.groups())
+    return {"x": x, "y": y, "w": w, "h": h}
 
 
 # ---- 另存为（同 Windows GrabArea.SaveAs）----
