@@ -25,11 +25,8 @@
 
 Screenshots usually vanish into a folder. Xitu keeps the last few in sight: anything that lands in your screenshot folder or clipboard drops onto a rope along the top edge of the screen, sways for a moment, and stays there until you take it down. Click to copy, double-click to open, drag a photo straight into a chat window.
 
-On Windows it is a tray app with one rope per screen. On Linux it runs on Hyprland with Quickshell, as a top-right drawer by default or as the same rope.
+On Windows it is a tray app with one rope per screen. On Linux it runs on Hyprland with Quickshell, with the same rope along the top edge.
 
-<p align="center">
-  <img src="docs/demo-drawer.gif" width="640" alt="Linux drawer mode: a new screenshot takes the big slot">
-</p>
 
 Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendedero) for macOS (MIT, see `NOTICE`). It has its own name and icon and is not Tendedero.
 
@@ -60,14 +57,10 @@ Windows:
 
 Linux (Hyprland + Quickshell):
 
-- Two UI modes: `drawer` (top-right drawer, default) and `rope` (top edge). The environment variable `XITU_UI=drawer|rope` takes priority over the `ui` field in `settings.json`.
 - No tray menu; expand, gallery and quit are triggered with `qs ipc` (see below) or from your bar or key bindings.
 - Drag cards to reorder. Rope and card colors (themes) can be switched over IPC without restarting.
-- Drag an image from a browser or file manager onto the top edge: the drawer opens and takes it in.
+- Drag an image from a browser or file manager onto the top edge: the rope comes down and takes it in.
 
-<p align="center">
-  <img src="docs/demo-drawer-drop.png" width="420" alt="Dragging an image over the drawer">
-</p>
 
 ## Windows build and install
 
@@ -140,9 +133,8 @@ Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openL
 
 Xitu runs on its own with `qs -p linux`; Caelestia is not required.
 
-- Drawer colors: in `drawer` mode the drawer reads Caelestia's color scheme live from `${XDG_STATE_HOME:-~/.local/state}/caelestia/scheme.json`. Without that file it uses a built-in dark scheme. (`linux/ThemeEngine.qml`)
 - Rope theme: `shared/themes/caelestia.json` is a rope theme in Caelestia's palette; switch to it with `qs ipc -p linux call xitu setTheme caelestia`.
-- Embedding: the background logic lives in `linux/XituCore.qml`, separate from the windows, so another Quickshell shell (for example a Caelestia config) can host the drawer itself. In that setup only `rope` mode still needs this process.
+- Embedding: the background logic lives in `linux/XituCore.qml`, separate from the windows, so another Quickshell shell can host it.
 
 Optional accent for rope themes whose color is `accent`: point two environment variables at files provided by your desktop shell. If either is unset or unreadable, the theme's own accent is used (default `#3D6FE0`).
 
@@ -156,7 +148,7 @@ Windows paths are listed under "Windows build and install". Linux paths, with th
 | Path | Purpose | Defined in |
 |---|---|---|
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | what is on the rope (same format as Windows) | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | settings (`ui`, `Theme`, `LibraryPath`, `RetentionDays`, `Collect`, …) | `linux/xitu_helper.py`; `linux/shell.qml` reads the `ui` field from the same file |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | settings (`Theme`, `LibraryPath`, `RetentionDays`, `Collect`, …) | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | helper log | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | custom themes (same id overrides the built-in) | `shared/themes/README.md` |
 | gallery root | `系图/` under `xdg-user-dir PICTURES` (falls back to `~/Pictures`), overridable via `LibraryPath` | `linux/xitu_helper.py` |
