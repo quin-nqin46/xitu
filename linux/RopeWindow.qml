@@ -169,7 +169,10 @@ PanelWindow {
     Timer {
         id: fullscreenCheck
         interval: 150
-        onTriggered: if (!win.fullscreenHere()) win.doReveal(win.pendingPin)
+        onTriggered: {
+            if (!win.fullscreenHere()) win.doReveal(win.pendingPin);
+            else if (win.shell.debugReveal) win.shell.log("全屏，不放下 " + win.monitorName);
+        }
     }
 
     function reveal(pin) {
@@ -189,6 +192,7 @@ PanelWindow {
         if (!revealed) {
             revealed = true;
             swayTimer.restart();
+            if (shell.debugReveal) shell.log("放下 " + monitorName);
         }
     }
 

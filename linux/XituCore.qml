@@ -31,6 +31,8 @@ Scope {
     // 聚焦屏、全屏判断（Hyprland / Sway / 其他 wlroots 系 / 兜底），见 Desktop.qml
     Desktop { id: desktop }
     property alias desktop: desktop
+    // 测试用：XITU_DEBUG_REVEAL=1 时每次放下 / 因全屏不放下绳子都记一行日志（没法截屏的桌面靠它判断）
+    readonly property bool debugReveal: Quickshell.env("XITU_DEBUG_REVEAL") === "1"
     Component.onCompleted: log("桌面后端：" + desktop.kind)
 
     property int version: 0
