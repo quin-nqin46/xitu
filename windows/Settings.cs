@@ -64,6 +64,8 @@ internal sealed class AppSettings
     public HotkeyChord ToggleLine { get; set; } = HotkeyChord.ToggleDefault;
     public HotkeyChord Gallery { get; set; } = default;
     public bool CopyToClipboard { get; set; } = true;
+    /// 复制的图片（如浏览器「复制图片」）也挂上绳。Linux 版读同名字段。
+    public bool HangCopiedImages { get; set; } = true;
     public string LibraryPath { get; set; } = "";
     public int RetentionDays { get; set; } = 30;
     public double GalleryLeft { get; set; } = double.NaN;
@@ -89,6 +91,7 @@ internal sealed class AppSettings
                 ToggleLine = toggle.IsBindable ? toggle : HotkeyChord.ToggleDefault,
                 Gallery = gallery.IsBindable ? gallery : default,
                 CopyToClipboard = dto.CopyToClipboard,
+                HangCopiedImages = dto.HangCopiedImages ?? true,
                 LibraryPath = dto.LibraryPath ?? "",
                 RetentionDays = dto.RetentionDays ?? 30,
                 GalleryLeft = dto.GalleryLeft ?? double.NaN,
@@ -118,6 +121,7 @@ internal sealed class AppSettings
                 GalleryModifiers = Gallery.Modifiers,
                 GalleryKey = Gallery.Key,
                 CopyToClipboard = CopyToClipboard,
+                HangCopiedImages = HangCopiedImages,
                 LibraryPath = LibraryPath,
                 RetentionDays = RetentionDays,
                 GalleryLeft = GalleryLeft,
@@ -145,6 +149,7 @@ internal sealed class AppSettings
         public uint GalleryModifiers { get; set; }
         public uint GalleryKey { get; set; }
         public bool CopyToClipboard { get; set; } = true;
+        public bool? HangCopiedImages { get; set; }
         public string? LibraryPath { get; set; }
         public int? RetentionDays { get; set; }
         public double? GalleryLeft { get; set; }

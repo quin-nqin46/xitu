@@ -273,11 +273,20 @@ def test_clip_skips_office_bitmap(helper, library, monkeypatch, sample_png, caps
     assert capsys.readouterr().out == ""
 
 
-def test_clip_skips_browser_copy_image(helper, library, monkeypatch, sample_png, capsys):
-    # 同 Windows 版：浏览器「复制图片」附带 HTML，不算截图
-    html = b'<meta charset="utf-8"><img src="https://example.com/a.png">&nbsp;'
+BROWSER_HTML = b'<meta charset="utf-8"><img src="https://example.com/a.png">&nbsp;'
+
+
+@pytest.mark.parametrize("types", [["text/html", "image/png"], ["text/html", "text/plain", "image/png"]])
+def test_clip_accepts_browser_copy_image_by_default(helper, library, monkeypatch, sample_png, capsys, types):
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(types, {"image/png": sample_png, "text/html": BROWSER_HTML}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out.strip() != ""
+
+
+def test_clip_skips_browser_copy_image_when_turned_off(helper, library, monkeypatch, sample_png, capsys):
+    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "HangCopiedImages": False}))
     monkeypatch.setattr(subprocess, "run", FakeWlPaste(
-        ["text/html", "image/png"], {"image/png": sample_png, "text/html": html}))
+        ["text/html", "image/png"], {"image/png": sample_png, "text/html": BROWSER_HTML}))
     assert helper.cmd_clip() == 0
     assert capsys.readouterr().out == ""
 

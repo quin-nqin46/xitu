@@ -57,7 +57,7 @@ NAME_PATTERN = re.compile(r"^(截图|剪贴板|拖入|文件|其他)_(\d{8})_(\d
 MONTH_FOLDER = re.compile(r"^\d{4}-\d{2}$")
 FAVORITES = "收藏"
 # 剪贴板里同时有这些文字格式时不当截图（WPS 复制单元格也会带位图）
-TEXT_TYPES = ("text/html", "text/rtf", "application/rtf", "text/richtext", "text/uri-list")
+RICH_TYPES = ("text/rtf", "application/rtf", "text/richtext")
 # X11 风格的纯文本类型名，经 XWayland 复制时会出现
 PLAIN_TEXT_ATOMS = ("utf8_string", "string", "text", "compound_text")
 OWN_CLIP_SECONDS = 30
@@ -366,22 +366,48 @@ def clip_types():
     return [t.strip() for t in r.stdout.splitlines() if t.strip()]
 
 
-def clip_is_capture(types):
-    """规则同 Windows 版 ScreenshotWatcher.LooksLikeCapturedBitmap：
-    截图工具只放图片格式。带文件列表的是复制文件；带文字、HTML、RTF 的是办公软件复制单元格、
-    浏览器复制图片这类，都不算截图。"""
-    if not any(t.startswith("image/") for t in types):
+def html_is_lone_image():
+    """剪贴板的 text/html 是不是只有一张图（浏览器「复制图片」会附一个 <img> 标签）。
+    WPS 复制单元格附带的是表格和文字，不算。读不到也不算。规则同 Windows 版 ScreenshotWatcher.HtmlIsLoneImage。"""
+    try:
+        html = subprocess.run(
+            ["wl-paste", "--no-newline", "--type", "text/html"],
+            capture_output=True, timeout=3,
+        ).stdout[:200_000].decode("utf-8", "replace")
+    except subprocess.TimeoutExpired:
         return False
-    for t in types:
-        base = t.split(";")[0].strip().lower()
-        if base in TEXT_TYPES or base.startswith("text/") or base in PLAIN_TEXT_ATOMS:
-            return False
-    return True
+    if not re.search(r"<img\b", html, re.I) or re.search(r"<(table|td|tr)\b", html, re.I):
+        return False
+    text = re.sub(r"<[^>]*>", "", html)
+    text = re.sub(r"&nbsp;|&#160;", "", text)
+    return text.strip() == ""
+
+
+def hang_copied_images(settings):
+    """设置 HangCopiedImages：复制的图片（如浏览器「复制图片」）也挂上绳。默认开，两端同名同义。"""
+    v = settings.get("HangCopiedImages")
+    return v if isinstance(v, bool) else True
+
+
+def clip_should_take(types, settings):
+    """规则同 Windows 版 ScreenshotWatcher.ShouldTakeClipboard：
+    只有图片格式的是截图，收。带文件列表的是复制文件，带 RTF 的是办公软件复制，都不收。
+    带 HTML（可能还带文字）的：HTML 里只有一张图就是复制图片，按 HangCopiedImages 决定；否则不收。"""
+    bases = [t.split(";")[0].strip().lower() for t in types]
+    if not any(t.startswith("image/") for t in bases):
+        return False
+    if any(t == "text/uri-list" or t in RICH_TYPES for t in bases):
+        return False
+    has_html = "text/html" in bases
+    has_text = any((t.startswith("text/") and t != "text/html") or t in PLAIN_TEXT_ATOMS for t in bases)
+    if not has_html and not has_text:
+        return True
+    return has_html and hang_copied_images(settings) and html_is_lone_image()
 
 
 def cmd_clip():
     types = clip_types()
-    if not clip_is_capture(types):
+    if not clip_should_take(types, load_settings()):
         return 0
     image = next((t for t in types if t == "image/png"), None) or next(t for t in types if t.startswith("image/"))
     # timeout 到了 subprocess.run 抛 TimeoutExpired，不会把半截 stdout 当成成功结果返回。
