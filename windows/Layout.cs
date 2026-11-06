@@ -7,7 +7,7 @@ internal static class Layout
 {
     public const double PanelHeight = 210;
     public const double RopeTop = 10;
-    public const double Spacing = 174;
+    public const double Spacing = LineCapacity.Spacing;
     public const double CardWidth = 150;
     public const double PinAbove = 9.5;
     public const double FrameRadius = 10;
@@ -20,8 +20,8 @@ internal static class Layout
     /// 顶边热区高度（DIP）。Windows 没有菜单栏，用一条贴着屏幕顶边的窄带代替。
     public const double TopBandDip = 20;
 
-    public const int MinItems = 3;
-    public const int MaxItemsCap = 12;
+    public const int MinItems = LineCapacity.MinItems;
+    public const int MaxItemsCap = LineCapacity.MaxItemsCap;
 
     public static readonly TimeSpan RevealDelay = TimeSpan.FromMilliseconds(300);
     public static readonly TimeSpan RetractDelay = TimeSpan.FromMilliseconds(500);
@@ -89,11 +89,5 @@ internal static class Layout
         return new Rect(cardLeft, cardTop, cardW, cardH);
     }
 
-    public static int Capacity(double widthDip)
-    {
-        var n = (int)((widthDip - 200) / Spacing);
-        if (n < MinItems) n = MinItems;
-        if (n > MaxItemsCap) n = MaxItemsCap;
-        return n;
-    }
+    public static int Capacity(double widthDip) => LineCapacity.ForWidth(widthDip);
 }
