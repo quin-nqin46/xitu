@@ -324,6 +324,13 @@ Scope {
     }
 
     // ---- 自带截图：同 Windows Ctrl+Shift+A。快捷键由 Hyprland bind 调 ipc capture ----
+    // 壳把 flyHandler 设成一个函数(shot) → bool：接手飞行动画就返回 true，落地后自己调 hang
+    property var flyHandler: null
+    function flightHandled(shot) {
+        if (!flyHandler) return false;
+        try { return !!flyHandler(shot); } catch (e) { log("飞行失败：" + e); return false; }
+    }
+
     function capture() {
         if (captureProc.running) return;
         captureProc.running = true;
@@ -334,8 +341,14 @@ Scope {
         command: ["python3", root.helper, "capture"]
         stdout: StdioCollector {
             onStreamFinished: {
-                var p = text.trim();
-                if (p !== "") root.hang(p, false);
+                var t = text.trim();
+                if (t === "") return;
+                var shot;
+                try { shot = JSON.parse(t); } catch (e) { root.log("capture 读不懂：" + t); return; }
+                if (!shot.path) return;
+                // 外面的壳接了 flightRequested 就从框选处飞上绳子，落下再挂；没人接就直接挂
+                if (shot.w > 0 && shot.h > 0 && root.flightHandled(shot)) return;
+                root.hang(shot.path, false);
             }
         }
         stderr: StdioCollector {

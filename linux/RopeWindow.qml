@@ -215,6 +215,35 @@ PanelWindow {
 
     function toggle() { if (revealed) retract(); else reveal(true); }
 
+    // ---- 截图飞上绳子（同 Windows CaptureFlight）：从框选处飞到新卡片的位置，落下后再挂上 ----
+    // 全屏时不飞也不弹（同 Windows），返回 false 让 core 直接挂
+    function flyIn(shot) {
+        if (fullscreenHere()) return false;
+        // 上一张还在飞：先让它落地挂上
+        if (flyAnim.running) { flyAnim.stop(); flight.land(); }
+        var s = win.modelData;
+        var count = liveCount();
+        var n = Math.min(count + 1, shell.capacity);
+        var index = n - 1;
+        var tx = L.slotX(index, n, win.width);
+        var photo = L.photoSize(shot.w, shot.h);
+        var fw = photo.w + shell.theme.padLeft + shell.theme.padRight;
+        var fh = photo.h + shell.theme.padTop + shell.theme.padBottom;
+        flight.path = shot.path;
+        flight.fromX = shot.x - s.x;
+        flight.fromY = shot.y - s.y;
+        flight.fromW = shot.w;
+        flight.fromH = shot.h;
+        flight.toX = tx - fw / 2;
+        flight.toY = L.ropeY(tx, win.width) + L.PinHeight - 12 - L.PinAbove;
+        flight.toW = fw;
+        flight.toH = fh;
+        flight.tilt = Math.random() * 5 - 2.5;
+        peek();
+        flight.start();
+        return true;
+    }
+
     function peek() {
         if (revealed) return;
         reveal(false);
@@ -401,6 +430,106 @@ PanelWindow {
         y: 0
         width: !win.revealed ? 0 : wide ? win.width : rightEdge - leftEdge
         height: !win.revealed ? 0 : wide ? win.height : L.PanelHeight
+    }
+
+    PanelWindow {
+        id: flight
+        property string path: ""        // 还没挂上的那张；落地后清空
+        property string imagePath: ""   // 飞行和淡出时显示的图
+        property real fromX: 0
+        property real fromY: 0
+        property real fromW: 1
+        property real fromH: 1
+        property real toX: 0
+        property real toY: 0
+        property real toW: 1
+        property real toH: 1
+        property real tilt: 0
+        property real t: 0
+
+        function start() {
+            t = 0;
+            imagePath = path;
+            flyLayer.opacity = 1;
+            visible = true;
+            flyAnim.restart();
+        }
+        function land() {
+            if (path === "") return;
+            var p = path;
+            path = "";
+            win.shell.hang(p, false);
+            fadeAnim.restart();
+        }
+        function ease(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+        function smooth(x, a, b) { var u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); }
+        function lerp(a, b, k) { return a + (b - a) * k; }
+
+        readonly property real k: ease(t)
+        readonly property real chrome: smooth(k, 0.35, 1)
+
+        screen: win.modelData
+        visible: false
+        color: "transparent"
+        anchors.top: true
+        anchors.left: true
+        anchors.right: true
+        anchors.bottom: true
+        exclusionMode: ExclusionMode.Ignore
+        focusable: false
+        mask: Region {}
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "xitu-flight"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        NumberAnimation {
+            id: flyAnim
+            target: flight
+            property: "t"
+            from: 0
+            to: 1
+            duration: L.FlightSeconds * 1000
+            onFinished: flight.land()
+        }
+        NumberAnimation {
+            id: fadeAnim
+            target: flyLayer
+            property: "opacity"
+            from: 1
+            to: 0
+            duration: 160
+            onFinished: { flight.visible = false; flight.imagePath = ""; }
+        }
+
+        Item {
+            id: flyLayer
+            anchors.fill: parent
+
+        Rectangle {
+            readonly property real w: flight.lerp(flight.fromW, flight.toW, flight.k)
+            readonly property real h: flight.lerp(flight.fromH, flight.toH, flight.k)
+            x: flight.lerp(flight.fromX + flight.fromW / 2, flight.toX + flight.toW / 2, flight.k) - w / 2
+            y: flight.lerp(flight.fromY, flight.toY, flight.k) - Math.sin(Math.PI * flight.k) * L.FlightArc
+            width: Math.max(1, w)
+            height: Math.max(1, h)
+            radius: win.shell.theme.frameRadius * flight.chrome
+            color: Qt.rgba(win.shell.theme.framePaper.r, win.shell.theme.framePaper.g, win.shell.theme.framePaper.b, flight.chrome)
+            transformOrigin: Item.Top
+            rotation: flight.tilt * flight.k
+
+            Image {
+                x: win.shell.theme.padLeft * flight.chrome
+                y: win.shell.theme.padTop * flight.chrome
+                width: parent.width - (win.shell.theme.padLeft + win.shell.theme.padRight) * flight.chrome
+                height: parent.height - (win.shell.theme.padTop + win.shell.theme.padBottom) * flight.chrome
+                source: flight.imagePath !== "" ? "file://" + flight.imagePath : ""
+                sourceSize.width: 960
+                asynchronous: false
+                fillMode: Image.Stretch
+                smooth: true
+            }
+        }
+        }
     }
 
     // 顶边感应：贴着屏幕最上沿的一条 2 像素窄带（盖在顶栏上沿，顶栏的胶囊离顶边还有十来像素，不影响点击）。
