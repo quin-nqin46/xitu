@@ -43,7 +43,7 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 两边共有：
 
 - 截图文件夹和剪贴板里出现的截图自动挂上。浏览器里「复制图片」也会挂上。和表格、文字、文件一起复制的位图不挂。
-- 自动挂哪些由 `settings.json` 的 `Collect` 决定（Windows 在 设置 › 通用 › 自动挂上）：`all`（默认，截图和复制的图片）、`screenshots`（只要截图，复制的图片不挂）、`own`（只要系图自己截的图，截图文件夹和剪贴板都不看；Linux 还没有自带截图，所以 Linux 上选 own 目前不会自动挂任何图）。拖进来的图总会挂上。
+- 自动挂哪些由 `settings.json` 的 `Collect` 决定（两边都在 设置 › 自动挂上；Linux 从图库左下角「设置…」、绳子空白处右键菜单，或 `qs ipc … call xitu settings` 打开设置）：`all`（默认，截图和复制的图片）、`screenshots`（只要截图，复制的图片不挂）、`own`（只要系图自己截的图，截图文件夹和剪贴板都不看；Linux 还没有自带截图，所以 Linux 上选 own 目前不会自动挂任何图）。拖进来的图总会挂上。
 - 单击复制，双击打开；悬停点叉取下，文件留在图库。
 - 取下时照片落下；绳子模式里照片轻摆，偶尔有微风。
 - 图库窗口保存挂过的所有照片。
@@ -57,6 +57,7 @@ Windows：
 
 Linux（Hyprland + Quickshell）：
 
+- 设置窗口和 Windows 版对齐：图库位置（可选把图搬过去）、保存时间和「立即清理过期」、自动挂上、主题。选文件夹用 `zenity` 或 `kdialog`，都没装就直接在框里输入路径。
 - 没有托盘菜单；展开、图库、退出用 `qs ipc`（见下）或由顶栏、按键绑定触发。
 - 拖动卡片换位置。绳子和卡片的颜色（主题）可通过 IPC 切换，不用重启。
 - 从浏览器或文件管理器把图片拖到屏幕顶边，绳子会放下来把它收进来。
@@ -127,7 +128,7 @@ qs -p linux
 qs ipc -p linux call xitu toggle
 ```
 
-IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
+IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`settings`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
 
 ## 可选：与 Caelestia 整合
 

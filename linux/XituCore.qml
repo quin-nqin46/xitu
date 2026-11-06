@@ -193,6 +193,8 @@ Scope {
     function openGallery() { gallery.toggle(); }
     function showGallery(screen) { gallery.showOn(screen); }
     function closeGallery() { gallery.requestClose(); }
+    // 设置是普通窗口，图库浮层在它上面一层，先关图库
+    function openSettings() { gallery.requestClose("settings"); settingsWin.show(); }
 
     function popNew(path) { popRequested(path); }
 
@@ -475,6 +477,7 @@ Scope {
         function openLibrary(): void { root.openLibrary(); }
         function gallery(): void { root.openGallery(); }
         function closeGallery(): void { root.closeGallery(); }
+        function settings(): void { root.openSettings(); }
         function quit(): void { root.quitRequested(); }
         function setTheme(id: string): void { themeEngine.setTheme(id); }
         function themes(): string { return themeEngine.themes(); }
@@ -483,6 +486,11 @@ Scope {
 
     GalleryWindow {
         id: gallery
+        shell: root
+    }
+
+    SettingsWindow {
+        id: settingsWin
         shell: root
     }
 
