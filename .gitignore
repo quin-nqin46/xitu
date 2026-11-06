@@ -8,6 +8,7 @@ __pycache__/
 *.pyc
 linux/tools/out/
 linux/tools/layout.js
+linux/tools/fonts.js
 linux/tools/DrawerPanel.qml
 linux/tools/Card.qml
 linux/tools/Rope.qml

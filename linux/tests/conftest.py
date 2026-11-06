@@ -38,7 +38,9 @@ def helper(tmp_path, monkeypatch):
     monkeypatch.setattr(h, "OWN_CLIP", data / "own-clipboard.json")
     monkeypatch.setattr(h, "LOG_FILE", data / "log.txt")
     monkeypatch.setattr(h, "pictures_dir", lambda: pictures)
+    monkeypatch.setattr(h, "_xdg_screenshots_dir", lambda: None)
     monkeypatch.delenv("XITU_SCREENSHOT_DIR", raising=False)
+    monkeypatch.delenv("XDG_SCREENSHOTS_DIR", raising=False)
     return h
 
 

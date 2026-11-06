@@ -39,6 +39,35 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 | `docs/` | 演示图 |
 | `LICENSE`、`NOTICE` | 许可与致谢 |
 
+## 安装
+
+### Windows
+
+1. 到 [Releases](https://github.com/quin-nqin46/xitu/releases/latest) 下载 `Xitu-<版本>-win-x64.zip`，解压到一个固定的位置（比如 `D:\Apps\Xitu\`）。
+2. 双击 `Xitu.exe`。程序自带 .NET 运行时，不用另装。
+3. 第一次运行时 Windows SmartScreen 可能提示「Windows 已保护你的电脑」（程序没有代码签名）：点「更多信息」→「仍要运行」。
+4. 系图在右下角托盘运行。要开机自启：右键托盘图标 › 开机自启。
+
+截图按 Ctrl+Shift+A。这个键被微信、QQ 等占用时会弹提示，到 设置 › 快捷键 里换一个。
+
+### Linux（Hyprland）
+
+1. 到 [Releases](https://github.com/quin-nqin46/xitu/releases/latest) 下载 `xitu-<版本>-linux.tar.gz` 并解压，或者 `git clone` 本仓库。
+2. 在解压出来的目录（或仓库根目录）里运行：
+
+   ```
+   sh linux/install.sh
+   ```
+
+   脚本会检查依赖，缺什么就按你的发行版打印安装命令（不会自己用 sudo 装）；把程序装到 `~/.local/share/Xitu/app`，命令装到 `~/.local/bin/xitu`；写一份 `~/.config/hypr/xitu.conf`（登录时自启，Ctrl+Shift+A 截图），并问要不要在 `hyprland.conf` 末尾加一行 `source` 它。在 Hyprland 里运行时，装完直接启动。
+3. 缺的包装好以后，运行 `xitu start`（或重新登录）。
+
+需要的包：quickshell、python3 和 Pillow、wl-clipboard、inotify-tools、xdg-utils、gio（glib2）。可选：grim 和 slurp（自带截图）、xdg-user-dirs、libnotify（缺东西时弹通知）、zenity 或 kdialog（另存为、选文件夹）、satty 或 swappy（编辑）。`sh linux/install.sh --check` 只检查、不安装。系图运行时如果发现缺了必需的包，会弹一条通知。
+
+常用命令：`xitu`（放下或收起绳子）、`xitu capture`、`xitu gallery`、`xitu settings`、`xitu quit`。卸载：`sh linux/install.sh --uninstall`，图库和设置会留着。
+
+如果 `hyprland.conf` 里已经有别的程序绑了 Ctrl+Shift+A，两个都会触发；改 `~/.config/hypr/xitu.conf` 里的 `bind` 那行即可。目前只完整支持 Hyprland；GNOME 和 X11 不支持。
+
 ## 功能
 
 两边共有：
@@ -66,7 +95,7 @@ Linux（Hyprland + Quickshell）：
 - 两边一样：卡片右键 › 另存为… 把图另存一份到别处，图库里的原图不动。Linux 的保存对话框需要 `zenity` 或 `kdialog`。
 - 两边一样：指针停在屏幕顶边的中间那一段（挂照片的那一段，至少 320 像素宽）0.3 秒，绳子才放下来。两角和顶边的其他地方（标签页、标题栏、工作区按钮）碰了不再触发。
 
-## Windows 构建与安装
+## Windows 从源码构建
 
 需要 .NET 8 SDK。
 
@@ -80,11 +109,13 @@ dotnet build windows/
 dotnet build windows/ -p:EnableWindowsTargeting=true
 ```
 
-发布示例（单文件，用已装的 .NET 运行时）：
+发布（单文件，自带 .NET 运行时，和 Releases 里的一样）：
 
 ```
-dotnet publish windows/ -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
+dotnet publish windows/ -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
 ```
+
+发新版本：推一个 `v*` 标签（`git tag v0.2.0 && git push origin v0.2.0`），`.github/workflows/release.yml` 会打好 Windows zip 和 Linux tar.gz、做冒烟测试，然后发 GitHub Release。
 
 重新生成图标：
 
@@ -100,7 +131,7 @@ dotnet run --project windows/tools/make-icon -- windows/Assets
 - 剪贴板暂存：`%LOCALAPPDATA%\Xitu\Inbox\`
 - 图库：`%USERPROFILE%\Pictures\系图\`（默认；设置里可改）
 
-## Linux 依赖与运行
+## Linux 从源码运行
 
 依赖（只列代码里实际调用的）：
 
@@ -111,7 +142,7 @@ dotnet run --project windows/tools/make-icon -- windows/Assets
 - inotify-tools：`inotifywait`（截图文件夹监听）。
 - xdg-utils 和 gio：`xdg-open`、`xdg-user-dir PICTURES`、`gio trash`（图库删除进回收站）。
 
-Linux 版自己不截图，靠截图文件夹和剪贴板监听收图。
+下面是不用安装脚本、直接从仓库运行的方法（开发用）。
 
 助手脚本的测试（需要 pytest 和 Pillow，`shared/tests` 里 layout.js 的用例还要 node；不需要 Wayland 和桌面环境）：
 
@@ -155,7 +186,7 @@ IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`�
 
 ## 配置与数据文件
 
-Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注明定义它的源文件：
+Windows 路径见上文「Windows 从源码构建」。Linux 路径，每条注明定义它的源文件：
 
 | 路径 | 用途 | 出处 |
 |---|---|---|
@@ -164,7 +195,7 @@ Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注�
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | 助手日志 | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | 自定义主题（id 相同则覆盖内置） | `shared/themes/README.md` |
 | 图库根目录 | `xdg-user-dir PICTURES`（取不到时用 `~/Pictures`）下的 `系图/`，可用 `LibraryPath` 改 | `linux/xitu_helper.py` |
-| 截图文件夹 | 监听新截图：设了 `$XITU_SCREENSHOT_DIR` 就用它，否则是「图片」目录下的 `Screenshots/`（已有 `屏幕截图/` 时用它） | `linux/xitu_helper.py`（`screenshot-dir`） |
+| 截图文件夹 | 监听新截图：设了 `$XITU_SCREENSHOT_DIR` 就只盯它；否则 `XDG_SCREENSHOTS_DIR`；都没有时盯「图片」下已有的 `Screenshots/`、`屏幕截图/`，再加「图片」根目录（grim、grimblast、hyprshot 默认存这里，根目录里只收文件名像截图的）。只盯已经存在的文件夹，不会替你新建 | `linux/xitu_helper.py`（`screenshot-dirs`） |
 
 ## 致谢与许可
 
