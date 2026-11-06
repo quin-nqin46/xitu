@@ -131,7 +131,7 @@ qs -p linux
 qs ipc -p linux call xitu toggle
 ```
 
-IPC target `xitu` 上的函数：`toggle`、`peek`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
+IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
 
 ## 可选：与 Caelestia 整合
 

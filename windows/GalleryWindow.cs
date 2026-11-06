@@ -164,6 +164,9 @@ internal sealed class GalleryWindow : Window
         SlideHighlight(snap: true);
     }
 
+    /// 卡片右键「打开图库」用。App 启动时设好。
+    public static Action? Launcher { get; set; }
+
     public static void Show(Line line, ScreenHost screens)
     {
         if (_open != null)
