@@ -41,6 +41,7 @@ jobs:
           $n = (Get-ChildItem theme-previews -Filter *.png).Count
           Write-Host "预览 $n 张"
           if ($n -eq 0) { Write-Error "没有生成预览" }
+          if (Select-String -Path "$env:LOCALAPPDATA/Xitu/log.txt" -Pattern " ERROR " -Quiet) { Write-Error "运行日志里有 ERROR" }
 
       - uses: actions/upload-artifact@v4
         with:
