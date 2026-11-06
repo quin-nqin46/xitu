@@ -1,0 +1,27 @@
+{
+  "about": "绳子的布局和取值。Windows 的 LineCapacity / TriggerZone / RetentionRule 和 Linux 的 layout.js / xitu_helper.py 都跑这些用例。宽度单位是 DIP（逻辑像素）。",
+  "capacity": [
+    {"width": 0, "items": 3},
+    {"width": 1280, "items": 6},
+    {"width": 1366, "items": 6},
+    {"width": 1920, "items": 9},
+    {"width": 2560, "items": 12},
+    {"width": 3840, "items": 12}
+  ],
+  "triggerSpan": [
+    {"count": 0, "width": 1920, "left": 800, "right": 1120},
+    {"count": 1, "width": 1920, "left": 800, "right": 1120},
+    {"count": 3, "width": 1920, "left": 697, "right": 1223},
+    {"count": 10, "width": 1920, "left": 88, "right": 1832},
+    {"count": 12, "width": 1280, "left": 0, "right": 1280},
+    {"count": 3, "width": 0, "left": 0, "right": 0}
+  ],
+  "retentionLabel": [
+    {"days": 7, "label": "7 天"},
+    {"days": 30, "label": "30 天"},
+    {"days": 90, "label": "90 天"},
+    {"days": 365, "label": "1 年"},
+    {"days": 0, "label": "永久"},
+    {"days": 14, "label": "14 天"}
+  ]
+}

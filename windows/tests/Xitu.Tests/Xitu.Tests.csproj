@@ -14,6 +14,7 @@
     <Compile Include="..\..\ClipboardRule.cs" Link="Linked\ClipboardRule.cs" />
     <Compile Include="..\..\LineCapacity.cs" Link="Linked\LineCapacity.cs" />
     <Compile Include="..\..\TriggerZone.cs" Link="Linked\TriggerZone.cs" />
+    <Compile Include="..\..\RetentionRule.cs" Link="Linked\RetentionRule.cs" />
     <Compile Include="..\..\ThemeSpec.cs" Link="Linked\ThemeSpec.cs" />
   </ItemGroup>
 

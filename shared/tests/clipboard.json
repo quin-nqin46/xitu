@@ -1,0 +1,18 @@
+{
+  "about": "剪贴板里的位图收不收。Windows ClipboardRule.Decide 和 Linux clip_should_take 都跑这些用例。formats 是抽象的格式：bitmap 位图 / files 文件列表 / rtf 富文本 / html / text 纯文字；Linux 分别对应 image/png、text/uri-list、text/rtf、text/html、text/plain。",
+  "cases": [
+    {"name": "只有位图：截图工具", "formats": ["bitmap"], "collect": "all", "take": true},
+    {"name": "只有位图，只要截图", "formats": ["bitmap"], "collect": "screenshots", "take": true},
+    {"name": "只有位图，只要系图自己截的", "formats": ["bitmap"], "collect": "own", "take": false},
+    {"name": "没有位图", "formats": ["text"], "collect": "all", "take": false},
+    {"name": "浏览器复制图片", "formats": ["bitmap", "html"], "html": "<meta charset=\"utf-8\"><img src=\"https://example.com/a.png\">&nbsp;", "collect": "all", "take": true},
+    {"name": "浏览器复制图片，带一份纯文字（Firefox）", "formats": ["bitmap", "html", "text"], "html": "<img src=\"https://example.com/a.png\">", "collect": "all", "take": true},
+    {"name": "浏览器复制图片，只要截图", "formats": ["bitmap", "html"], "html": "<img src=x>", "collect": "screenshots", "take": false},
+    {"name": "浏览器复制图片，只要系图自己截的", "formats": ["bitmap", "html"], "html": "<img src=x>", "collect": "own", "take": false},
+    {"name": "Excel / WPS 复制单元格", "formats": ["bitmap", "html", "text"], "html": "<table><tr><td>1</td></tr></table>", "collect": "all", "take": false},
+    {"name": "HTML 里有图也有文字", "formats": ["bitmap", "html"], "html": "<p>hello</p><img src=x>", "collect": "all", "take": false},
+    {"name": "有文字没 HTML", "formats": ["bitmap", "text"], "collect": "all", "take": false},
+    {"name": "Word 复制：带 RTF", "formats": ["bitmap", "html", "rtf"], "html": "<img src=x>", "collect": "all", "take": false},
+    {"name": "文件管理器复制文件", "formats": ["bitmap", "files"], "collect": "all", "take": false}
+  ]
+}

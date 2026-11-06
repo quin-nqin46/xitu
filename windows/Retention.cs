@@ -7,25 +7,13 @@ namespace Clothesline;
 /// 过期图进回收站。收藏的和正挂在绳上的不清理。
 internal static class Retention
 {
-    public static readonly (int Days, string Label)[] Options =
-    {
-        (7, "7 天"),
-        (30, "30 天"),
-        (90, "90 天"),
-        (365, "1 年"),
-        (0, "永久"),
-    };
+    public static (int Days, string Label)[] Options => RetentionRule.Options;
 
     private static DispatcherTimer? _timer;
     private static Line? _line;
     private static bool _first = true;
 
-    public static string Label(int days)
-    {
-        foreach (var option in Options)
-            if (option.Days == days) return option.Label;
-        return days + " 天";
-    }
+    public static string Label(int days) => RetentionRule.Label(days);
 
     public static void Start(Line line, Dispatcher dispatcher)
     {

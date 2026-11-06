@@ -1,5 +1,5 @@
 .pragma library
-// 尺寸、时间、物理。配色和夹子、相框的样式尺寸在 linux/themes/*.json。
+// 尺寸、时间、物理。配色和夹子、相框的样式尺寸在 shared/themes/*.json。
 // 下面的 Red / Wood 等常量还留着，绳子和夹子不再用它们。
 
 var PanelHeight = 210;

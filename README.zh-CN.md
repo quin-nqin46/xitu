@@ -35,6 +35,7 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 | `windows/` | Windows 源码（`Clothesline.csproj`，WPF；`Assets/`、`Capture/`、`tools/make-icon/`） |
 | `linux/` | Linux 源码（Quickshell 壳：QML、`xitu_helper.py`） |
 | `shared/themes/` | 绳子主题（JSON），Windows 和 Linux 都读这一份 |
+| `shared/tests/` | 测试用例（JSON），Windows 的 xunit 和 Linux 的 pytest 都跑 |
 | `docs/` | 演示图 |
 | `LICENSE`、`NOTICE` | 许可与致谢 |
 
@@ -112,7 +113,7 @@ dotnet run --project windows/tools/make-icon -- windows/Assets
 
 Linux 版自己不截图，靠截图文件夹和剪贴板监听收图。
 
-助手脚本的测试（需要 pytest 和 Pillow，不需要 Wayland 和桌面环境）：
+助手脚本的测试（需要 pytest 和 Pillow，`shared/tests` 里 layout.js 的用例还要 node；不需要 Wayland 和桌面环境）：
 
 ```
 python3 -m pytest linux/tests

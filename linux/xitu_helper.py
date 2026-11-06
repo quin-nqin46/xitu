@@ -395,6 +395,11 @@ def html_is_lone_image():
         ).stdout[:200_000].decode("utf-8", "replace")
     except subprocess.TimeoutExpired:
         return False
+    return html_lone_image(html)
+
+
+def html_lone_image(html):
+    """HTML 里只有一张图、没有表格和文字。不读剪贴板，方便测试。"""
     if not re.search(r"<img\b", html, re.I) or re.search(r"<(table|td|tr)\b", html, re.I):
         return False
     text = re.sub(r"<[^>]*>", "", html)
