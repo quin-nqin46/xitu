@@ -63,6 +63,7 @@ ALLOWED = [
     r"QStandardPaths",
     r"No such file or directory.*\.config/quickshell",
     r"qt\.qpa\.wayland\.textinput",         # Qt 自己的输入法焦点提示
+    r"I3SOCK is unset\. Trying \$SWAYSOCK",  # Quickshell.I3 在 Sway 上的正常提示（Sway 只设 SWAYSOCK）
 ]
 
 
