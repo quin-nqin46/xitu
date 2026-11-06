@@ -218,8 +218,10 @@ Scope {
         Process {
             property string file
             property string source
+            property bool fromFolder: false
             running: true
-            command: ["python3", root.helper, "import", file, source]
+            command: fromFolder ? ["python3", root.helper, "auto-import", file]
+                          : ["python3", root.helper, "import", file, source]
             stdout: StdioCollector {
                 onStreamFinished: {
                     var p = text.trim();
@@ -233,8 +235,8 @@ Scope {
         }
     }
 
-    function importFile(file, source) {
-        importJob.createObject(root, { file: file, source: source });
+    function importFile(file, source, fromFolder) {
+        importJob.createObject(root, { file: file, source: source, fromFolder: !!fromFolder });
     }
 
     Component {
@@ -371,7 +373,8 @@ Scope {
         command: ["python3", root.helper, "run", "sh", "-c", "d=$(python3 \"$1\" screenshot-dir) && mkdir -p \"$d\" && exec inotifywait -m -q -e close_write,moved_to --format '%w%f' \"$d\"", "sh", root.helper]
         stdout: SplitParser {
             onRead: line => {
-                if (/\.(png|jpe?g|webp)$/i.test(line)) root.importFile(line, "截图");
+                // 走 auto-import：设置 Collect 为 own 时助手不收
+                if (/\.(png|jpe?g|webp)$/i.test(line)) root.importFile(line, "截图", true);
             }
         }
         onExited: restartFolder.start()

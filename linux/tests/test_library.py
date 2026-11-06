@@ -283,12 +283,46 @@ def test_clip_accepts_browser_copy_image_by_default(helper, library, monkeypatch
     assert capsys.readouterr().out.strip() != ""
 
 
-def test_clip_skips_browser_copy_image_when_turned_off(helper, library, monkeypatch, sample_png, capsys):
-    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "HangCopiedImages": False}))
+def _collect(helper, library, mode):
+    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "Collect": mode}))
+
+
+def test_clip_screenshots_mode_skips_copied_image(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "screenshots")
     monkeypatch.setattr(subprocess, "run", FakeWlPaste(
         ["text/html", "image/png"], {"image/png": sample_png, "text/html": BROWSER_HTML}))
     assert helper.cmd_clip() == 0
     assert capsys.readouterr().out == ""
+
+
+def test_clip_screenshots_mode_keeps_plain_image(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "screenshots")
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out.strip() != ""
+
+
+def test_clip_own_mode_takes_nothing(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "own")
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_auto_import_respects_own_mode(helper, library, tmp_path, sample_png, capsys):
+    shot = tmp_path / "shot.png"
+    shot.write_bytes(sample_png)
+    _collect(helper, library, "own")
+    assert helper.cmd_auto_import(str(shot)) == 0
+    assert capsys.readouterr().out == ""
+    _collect(helper, library, "all")
+    assert helper.cmd_auto_import(str(shot)) == 0
+    assert "截图_" in capsys.readouterr().out
+
+
+def test_collect_mode_defaults_to_all(helper):
+    assert helper.collect_mode({}) == "all"
+    assert helper.collect_mode({"Collect": "bogus"}) == "all"
 
 
 @pytest.mark.parametrize("extra", ["text/plain;charset=utf-8", "UTF8_STRING", "text/uri-list"])

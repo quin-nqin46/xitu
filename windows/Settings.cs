@@ -57,6 +57,26 @@ internal readonly record struct HotkeyChord(uint Modifiers, uint Key)
     }
 }
 
+/// 设置 Collect 的取值，和 Linux 版 xitu_helper.collect_mode 一致。拖进来的不受影响。
+internal static class CollectMode
+{
+    /// 截图文件夹、剪贴板截图、复制的图片（如浏览器「复制图片」）都收。默认。
+    public const string All = "all";
+    /// 只收截图文件夹和剪贴板截图，复制的图片不收。
+    public const string Screenshots = "screenshots";
+    /// 只收系图自己截的图（截图快捷键）；截图文件夹和剪贴板都不看。
+    public const string Own = "own";
+
+    public static readonly (string Value, string Label)[] Options =
+    {
+        (All, "截图和复制的图片"),
+        (Screenshots, "只要截图"),
+        (Own, "只要系图自己截的图"),
+    };
+
+    public static string Normalize(string? value) => value is All or Screenshots or Own ? value : All;
+}
+
 /// 快捷键和截图选项。以后完整设置页也走这里。
 internal sealed class AppSettings
 {
@@ -64,8 +84,8 @@ internal sealed class AppSettings
     public HotkeyChord ToggleLine { get; set; } = HotkeyChord.ToggleDefault;
     public HotkeyChord Gallery { get; set; } = default;
     public bool CopyToClipboard { get; set; } = true;
-    /// 复制的图片（如浏览器「复制图片」）也挂上绳。Linux 版读同名字段。
-    public bool HangCopiedImages { get; set; } = true;
+    /// 自动收哪些图："all" | "screenshots" | "own"，见 <see cref="CollectMode"/>。Linux 版读同名字段 Collect。
+    public string Collect { get; set; } = CollectMode.All;
     public string LibraryPath { get; set; } = "";
     public int RetentionDays { get; set; } = 30;
     public double GalleryLeft { get; set; } = double.NaN;
@@ -91,7 +111,7 @@ internal sealed class AppSettings
                 ToggleLine = toggle.IsBindable ? toggle : HotkeyChord.ToggleDefault,
                 Gallery = gallery.IsBindable ? gallery : default,
                 CopyToClipboard = dto.CopyToClipboard,
-                HangCopiedImages = dto.HangCopiedImages ?? true,
+                Collect = CollectMode.Normalize(dto.Collect),
                 LibraryPath = dto.LibraryPath ?? "",
                 RetentionDays = dto.RetentionDays ?? 30,
                 GalleryLeft = dto.GalleryLeft ?? double.NaN,
@@ -121,7 +141,7 @@ internal sealed class AppSettings
                 GalleryModifiers = Gallery.Modifiers,
                 GalleryKey = Gallery.Key,
                 CopyToClipboard = CopyToClipboard,
-                HangCopiedImages = HangCopiedImages,
+                Collect = Collect,
                 LibraryPath = LibraryPath,
                 RetentionDays = RetentionDays,
                 GalleryLeft = GalleryLeft,
@@ -149,7 +169,7 @@ internal sealed class AppSettings
         public uint GalleryModifiers { get; set; }
         public uint GalleryKey { get; set; }
         public bool CopyToClipboard { get; set; } = true;
-        public bool? HangCopiedImages { get; set; }
+        public string? Collect { get; set; }
         public string? LibraryPath { get; set; }
         public int? RetentionDays { get; set; }
         public double? GalleryLeft { get; set; }

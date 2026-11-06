@@ -44,7 +44,8 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 
 Both platforms:
 
-- Screenshots that appear in your screenshot folder or clipboard hang up on their own. Images copied in a browser ("Copy image") hang up too; turn that off with `HangCopiedImages: false` in `settings.json` (on Windows: Settings › General). Bitmaps copied together with table cells, text or files are ignored.
+- Screenshots that appear in your screenshot folder or clipboard hang up on their own. Images copied in a browser ("Copy image") hang up too. Bitmaps copied together with table cells, text or files are ignored.
+- What hangs up on its own is set by `Collect` in `settings.json` (on Windows: Settings › General › 自动挂上): `all` (default: screenshots and copied images), `screenshots` (no copied images), `own` (only screenshots Xitu took itself; the screenshot folder and clipboard are not watched. Linux has no built-in capture yet, so there `own` hangs up nothing on its own). Dragged-in images always hang up.
 - Single click copies a photo, double click opens it. Hover and click the X to take it down; the file stays in the gallery.
 - A taken-down photo falls off; in rope mode photos sway gently and every so often a breeze passes.
 - A gallery window keeps everything that has been hung up.
@@ -153,7 +154,7 @@ Windows paths are listed under "Windows build and install". Linux paths, with th
 | Path | Purpose | Defined in |
 |---|---|---|
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | what is on the rope (same format as Windows) | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | settings (`ui`, `Theme`, `LibraryPath`, `RetentionDays`, `HangCopiedImages`, …) | `linux/xitu_helper.py`; `linux/shell.qml` reads the `ui` field from the same file |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | settings (`ui`, `Theme`, `LibraryPath`, `RetentionDays`, `Collect`, …) | `linux/xitu_helper.py`; `linux/shell.qml` reads the `ui` field from the same file |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | helper log | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | custom themes (same id overrides the built-in) | `linux/themes/README.md` |
 | gallery root | `系图/` under `xdg-user-dir PICTURES` (falls back to `~/Pictures`), overridable via `LibraryPath` | `linux/xitu_helper.py` |

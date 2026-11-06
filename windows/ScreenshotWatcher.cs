@@ -178,6 +178,11 @@ internal sealed class ScreenshotWatcher : IDisposable
     private void ConsiderFolderFile(string path)
     {
         if (_disposed || _seen.Contains(path) || _inflight.Contains(path)) return;
+        if (AppSettings.Current.Collect == CollectMode.Own)
+        {
+            _seen.Add(path); // 只要系图自己截的：文件夹里的新图不收，以后改回来也不补挂这张
+            return;
+        }
         _inflight.Add(path);
         _lastLength.Remove(path);
         ScheduleRead(path, DateTime.UtcNow);
@@ -315,6 +320,7 @@ internal sealed class ScreenshotWatcher : IDisposable
             Log.Info("忽略自己写入的剪贴板");
             return;
         }
+        if (AppSettings.Current.Collect == CollectMode.Own) return;
         if (!ShouldTakeClipboard()) return;
 
         BitmapSource? image;
@@ -361,7 +367,7 @@ internal sealed class ScreenshotWatcher : IDisposable
 
     /// 规则同 Linux 版 xitu_helper.clip_should_take：
     /// 只有位图的是截图，收。带文件列表的是复制文件，带 RTF 的是 Word/WPS 复制，都不收。
-    /// 带 HTML（可能还带文字）的：HTML 里只有一张图是浏览器「复制图片」，按设置 HangCopiedImages 决定；
+    /// 带 HTML（可能还带文字）的：HTML 里只有一张图是浏览器「复制图片」，设置 Collect 为 all 才收；
     /// HTML 里有表格或文字（Excel/WPS 复制单元格）不收。
     private static bool ShouldTakeClipboard()
     {
@@ -384,7 +390,7 @@ internal sealed class ScreenshotWatcher : IDisposable
         var text = NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfText)
             || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfUnicodeText);
         if (!html && !text) return true;
-        if (html && AppSettings.Current.HangCopiedImages && HtmlIsLoneImage(ReadClipboardHtml()))
+        if (html && AppSettings.Current.Collect == CollectMode.All && HtmlIsLoneImage(ReadClipboardHtml()))
         {
             Log.Info("剪贴板是复制的图片，挂上");
             return true;
