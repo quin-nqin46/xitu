@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <Compile Include="..\..\FullScreenRule.cs" Link="Linked\FullScreenRule.cs" />
+    <Compile Include="..\..\ClipboardRule.cs" Link="Linked\ClipboardRule.cs" />
+    <Compile Include="..\..\LineCapacity.cs" Link="Linked\LineCapacity.cs" />
   </ItemGroup>
 
   <ItemGroup>

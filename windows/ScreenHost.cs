@@ -207,7 +207,7 @@ internal sealed class ScreenHost : IDisposable
     {
         if (_windows.Count == 0) return;
         // 每块屏的绳子都挂同一串，按最窄那块算，免得窄屏两头挂出屏幕（同 Linux 版 XituCore.capacity）
-        _line.MaxItems = _windows.Min(w => w.Capacity);
+        _line.MaxItems = LineCapacity.ForScreens(_windows.Select(w => w.ActualWidth > 1 ? w.ActualWidth : w.Width));
     }
 
     private LineWindow? WindowUnderCursor()

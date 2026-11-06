@@ -57,26 +57,6 @@ internal readonly record struct HotkeyChord(uint Modifiers, uint Key)
     }
 }
 
-/// 设置 Collect 的取值，和 Linux 版 xitu_helper.collect_mode 一致。拖进来的不受影响。
-internal static class CollectMode
-{
-    /// 截图文件夹、剪贴板截图、复制的图片（如浏览器「复制图片」）都收。默认。
-    public const string All = "all";
-    /// 只收截图文件夹和剪贴板截图，复制的图片不收。
-    public const string Screenshots = "screenshots";
-    /// 只收系图自己截的图（截图快捷键）；截图文件夹和剪贴板都不看。
-    public const string Own = "own";
-
-    public static readonly (string Value, string Label)[] Options =
-    {
-        (All, "截图和复制的图片"),
-        (Screenshots, "只要截图"),
-        (Own, "只要系图自己截的图"),
-    };
-
-    public static string Normalize(string? value) => value is All or Screenshots or Own ? value : All;
-}
-
 /// 快捷键和截图选项。以后完整设置页也走这里。
 internal sealed class AppSettings
 {

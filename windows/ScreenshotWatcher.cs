@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -320,7 +319,6 @@ internal sealed class ScreenshotWatcher : IDisposable
             Log.Info("忽略自己写入的剪贴板");
             return;
         }
-        if (AppSettings.Current.Collect == CollectMode.Own) return;
         if (!ShouldTakeClipboard()) return;
 
         BitmapSource? image;
@@ -365,38 +363,22 @@ internal sealed class ScreenshotWatcher : IDisposable
         Log.Info($"剪贴板位图 {width}x{height}，推迟 {DedupWindow.TotalSeconds:0.0} 秒再落盘");
     }
 
-    /// 规则同 Linux 版 xitu_helper.clip_should_take：
-    /// 只有位图的是截图，收。带文件列表的是复制文件，带 RTF 的是 Word/WPS 复制，都不收。
-    /// 带 HTML（可能还带文字）的：HTML 里只有一张图是浏览器「复制图片」，设置 Collect 为 all 才收；
-    /// HTML 里有表格或文字（Excel/WPS 复制单元格）不收。
+    /// 判断规则在 ClipboardRule（纯逻辑，有单测）；这里只取剪贴板上有哪些格式。
     private static bool ShouldTakeClipboard()
     {
-        var fileDrop = NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfHdrop);
-        var bitmap = NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfBitmap)
-            || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfDib)
-            || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfDibV5);
-        if (!bitmap) return false;
-        if (fileDrop)
-        {
-            Log.Info("剪贴板同时有文件列表和位图，按文件复制忽略");
-            return false;
-        }
-        if (NativeMethods.IsClipboardFormatAvailable(RtfFormat))
-        {
-            Log.Info("剪贴板位图附带 RTF，按复制内容忽略");
-            return false;
-        }
-        var html = NativeMethods.IsClipboardFormatAvailable(HtmlFormat);
-        var text = NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfText)
-            || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfUnicodeText);
-        if (!html && !text) return true;
-        if (html && AppSettings.Current.Collect == CollectMode.All && HtmlIsLoneImage(ReadClipboardHtml()))
-        {
-            Log.Info("剪贴板是复制的图片，挂上");
-            return true;
-        }
-        Log.Info("剪贴板位图附带文字/HTML，按复制内容忽略");
-        return false;
+        var formats = new ClipboardFormats(
+            Bitmap: NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfBitmap)
+                || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfDib)
+                || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfDibV5),
+            FileDrop: NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfHdrop),
+            Rtf: NativeMethods.IsClipboardFormatAvailable(RtfFormat),
+            Html: NativeMethods.IsClipboardFormatAvailable(HtmlFormat),
+            Text: NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfText)
+                || NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfUnicodeText));
+        var verdict = ClipboardRule.Decide(formats, AppSettings.Current.Collect, ReadClipboardHtml);
+        if (verdict != ClipboardVerdict.Screenshot && verdict != ClipboardVerdict.NoBitmap)
+            Log.Info("剪贴板：" + ClipboardRule.Describe(verdict));
+        return ClipboardRule.Takes(verdict);
     }
 
     private static string ReadClipboardHtml()
@@ -411,22 +393,6 @@ internal sealed class ScreenshotWatcher : IDisposable
             Log.Info("读取剪贴板 HTML 失败: " + ex.Message);
             return "";
         }
-    }
-
-    private static readonly Regex ImgTag = new(@"<img\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex TableTag = new(@"<(table|td|tr)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex AnyTag = new(@"<[^>]*>", RegexOptions.CultureInvariant);
-    private static readonly Regex Nbsp = new(@"&nbsp;|&#160;", RegexOptions.CultureInvariant);
-
-    /// HTML 里只有一张图、没有表格和文字。CF_HTML 开头的 Version:/StartHTML: 头不算正文。
-    internal static bool HtmlIsLoneImage(string html)
-    {
-        var start = html.IndexOf('<');
-        if (start < 0) return false;
-        var body = html[start..];
-        if (!ImgTag.IsMatch(body) || TableTag.IsMatch(body)) return false;
-        var rest = Nbsp.Replace(AnyTag.Replace(body, ""), "");
-        return rest.Trim().Length == 0;
     }
 
     private bool MatchesRecentFolder(int width, int height)
