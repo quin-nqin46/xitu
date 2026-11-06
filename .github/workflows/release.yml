@@ -119,6 +119,8 @@ jobs:
           work=$(mktemp -d)
           tar -C "$work" -xzf "dist/xitu-${VERSION}-linux.tar.gz"
           export HOME="$work/home"
+          # 跑器上设了 XDG_CONFIG_HOME 等，指向真实 HOME；清掉才是一个全新用户
+          unset XDG_CONFIG_HOME XDG_DATA_HOME
           mkdir -p "$HOME/.config/hypr" && echo "# test" > "$HOME/.config/hypr/hyprland.conf"
           cd "$work/xitu-${VERSION}"
           sh linux/install.sh --check || true
