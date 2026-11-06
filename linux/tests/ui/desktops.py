@@ -93,7 +93,10 @@ class DesktopRun(Run):
         env = dict(self.env)
         env.pop("SWAYSOCK", None)
         log = open(self.out / "hyprland.log", "w")
-        p = subprocess.Popen(["Hyprland", "--config", str(conf)], env=env, stdout=log, stderr=subprocess.STDOUT,
+        cmd = ["Hyprland", "--config", str(conf)]
+        if os.geteuid() == 0:
+            cmd.append("--i-am-really-stupid")   # CI 容器里是 root，Hyprland 默认拒绝以 root 运行
+        p = subprocess.Popen(cmd, env=env, stdout=log, stderr=subprocess.STDOUT,
                              start_new_session=True)
         self.procs.append(p)
         hypr = Path(self.env["XDG_RUNTIME_DIR"]) / "hypr"
@@ -109,6 +112,8 @@ class DesktopRun(Run):
             if p.poll() is not None:
                 break
             time.sleep(0.1)
+        log.flush()
+        print((self.out / "hyprland.log").read_text(errors="replace")[-4000:], flush=True)
         raise RuntimeError("Hyprland 没起来，见 hyprland.log")
 
     # ---------- KWin：无头虚拟屏 ----------
