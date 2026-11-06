@@ -43,7 +43,7 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 Both platforms:
 
 - Screenshots that appear in your screenshot folder or clipboard hang up on their own. Images copied in a browser ("Copy image") hang up too. Bitmaps copied together with table cells, text or files are ignored.
-- What hangs up on its own is set by `Collect` in `settings.json` (on Windows: Settings › General › 自动挂上): `all` (default: screenshots and copied images), `screenshots` (no copied images), `own` (only screenshots Xitu took itself; the screenshot folder and clipboard are not watched. Linux has no built-in capture yet, so there `own` hangs up nothing on its own). Dragged-in images always hang up.
+- What hangs up on its own is set by `Collect` in `settings.json` (Settings › 自动挂上 on both; Linux opens Settings from the gallery's 设置… link, the rope's blank-area menu, or `qs ipc … call xitu settings`): `all` (default: screenshots and copied images), `screenshots` (no copied images), `own` (only screenshots Xitu took itself; the screenshot folder and clipboard are not watched. Linux has no built-in capture yet, so there `own` hangs up nothing on its own). Dragged-in images always hang up.
 - Single click copies a photo, double click opens it. Hover and click the X to take it down; the file stays in the gallery.
 - A taken-down photo falls off; in rope mode photos sway gently and every so often a breeze passes.
 - A gallery window keeps everything that has been hung up.
@@ -57,6 +57,7 @@ Windows:
 
 Linux (Hyprland + Quickshell):
 
+- Settings window (library location with optional move, retention and 立即清理过期, 自动挂上, theme) matches the Windows one. The folder picker uses `zenity` or `kdialog` if installed; otherwise type the path.
 - No tray menu; expand, gallery and quit are triggered with `qs ipc` (see below) or from your bar or key bindings.
 - Drag cards to reorder. Rope and card colors (themes) can be switched over IPC without restarting.
 - Drag an image from a browser or file manager onto the top edge: the rope comes down and takes it in.
@@ -127,7 +128,7 @@ Keyboard shortcuts and menu entries talk over IPC:
 qs ipc -p linux call xitu toggle
 ```
 
-Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
+Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `settings`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
 
 ## Caelestia integration (optional)
 
