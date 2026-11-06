@@ -4,7 +4,6 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import "fonts.js" as F
 
 // 图库内容照 GalleryWindow.cs。承载是聚焦屏上的 layer-shell 浮层：
@@ -90,11 +89,7 @@ PanelWindow {
     readonly property int filterRowH: 36
 
     function focusedScreen() {
-        var name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
-        var screens = Quickshell.screens;
-        for (var i = 0; i < screens.length; i++)
-            if (screens[i].name === name) return screens[i];
-        return screens.length > 0 ? screens[0] : null;
+        return shell.desktop.focusedScreen();
     }
 
     // 没开就在聚焦屏打开；同一块屏上已开就关。开在别的屏上时，卸掉旧的再在聚焦屏打开。

@@ -33,8 +33,15 @@ v0.1 的项目都做完了。
 
 ## v0.3 Linux 跨桌面
 
+进行中：
+
 - 完整支持 Hyprland、Sway、niri，KDE 部分支持；GNOME 和 X11 不支持
-- 需要在这些桌面上实测，所以放在发布之后
+- 聚焦屏和全屏判断抽到 `linux/Desktop.qml`：Hyprland / Sway（I3）/ wlr-foreign-toplevel / 鼠标最近停过的屏
+- 自带截图点窗口：Hyprland 和 Sway 都有预设窗口框
+- 安装脚本按桌面写自启和 Ctrl+Shift+A：Hyprland、Sway 自动接进配置，niri 打印要加的两行，KDE 写 XDG 自启并说明快捷键
+- CI 的 Sway 界面测试加了「全屏时不放下绳子」和「两块屏时在聚焦的那块放下」
+
+剩下：在 niri 和 KDE 上实测（CI 只有 Sway）。
 
 ## 以后再看
 

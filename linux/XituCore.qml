@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 import "layout.js" as L
 
 // 系图的后台：绳上条目、图库导入、截图文件夹与剪贴板监听、图库窗口、ipc。
@@ -28,6 +27,11 @@ Scope {
         followCaelestia: root.followCaelestia
     }
     property alias theme: themeEngine
+
+    // 聚焦屏、全屏判断（Hyprland / Sway / 其他 wlroots 系 / 兜底），见 Desktop.qml
+    Desktop { id: desktop }
+    property alias desktop: desktop
+    Component.onCompleted: log("桌面后端：" + desktop.kind)
 
     property int version: 0
     property int fallingCount: 0
@@ -323,7 +327,7 @@ Scope {
         }
     }
 
-    // ---- 自带截图：同 Windows Ctrl+Shift+A。快捷键由 Hyprland bind 调 ipc capture ----
+    // ---- 自带截图：同 Windows Ctrl+Shift+A。快捷键由合成器的绑定调 ipc capture（install.sh 写好 Hyprland / Sway 的） ----
     // 壳把 flyHandler 设成一个函数(shot) → bool：接手飞行动画就返回 true，落地后自己调 hang
     property var flyHandler: null
     function flightHandled(shot) {
