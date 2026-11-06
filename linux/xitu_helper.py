@@ -3,6 +3,7 @@
 
 子命令（每行输出一个结果，出错写 stderr、退出码非 0）：
   import <文件> <来源>   复制进图库（来源：截图/剪贴板/拖入/文件/其他），输出图库里的路径；内容相同的直接返回已有那张
+  auto-import <文件>     截图文件夹来的新文件：按设置 Collect 决定收不收（own 时不收），收就同 import <文件> 截图
   import-b64 <来源>      从 stdin 读 base64 的图像字节，进图库（拖放里直接带的 image/*）
   fetch <url>            下载一张 http(s) 图片（超时 15 秒、上限 30 MB、只要 Content-Type image/*），
                          存临时文件后走 import，来源「拖入」。不跟随到非 http(s)
@@ -349,6 +350,13 @@ def cmd_fetch(url):
                 pass
 
 
+def cmd_auto_import(path):
+    """截图文件夹里的新文件。Collect 为 own 时不收，什么也不输出。"""
+    if collect_mode(load_settings()) == "own":
+        return 0
+    return cmd_import(path, "截图")
+
+
 def cmd_import(path, label):
     path = Path(path)
     if is_owned(path):
@@ -383,16 +391,26 @@ def html_is_lone_image():
     return text.strip() == ""
 
 
-def hang_copied_images(settings):
-    """设置 HangCopiedImages：复制的图片（如浏览器「复制图片」）也挂上绳。默认开，两端同名同义。"""
-    v = settings.get("HangCopiedImages")
-    return v if isinstance(v, bool) else True
+COLLECT_MODES = ("all", "screenshots", "own")
+
+
+def collect_mode(settings):
+    """设置 Collect：自动收哪些图。两端同名同义（Windows Settings.cs CollectMode）。
+      all          截图文件夹、剪贴板截图、复制的图片（如浏览器「复制图片」）都收（默认）
+      screenshots  只收截图文件夹和剪贴板截图，复制的图片不收
+      own          只收系图自己截的图；截图文件夹和剪贴板都不看
+    拖进来的、ipc hang 的不受影响。"""
+    v = settings.get("Collect")
+    return v if v in COLLECT_MODES else "all"
 
 
 def clip_should_take(types, settings):
     """规则同 Windows 版 ScreenshotWatcher.ShouldTakeClipboard：
     只有图片格式的是截图，收。带文件列表的是复制文件，带 RTF 的是办公软件复制，都不收。
-    带 HTML（可能还带文字）的：HTML 里只有一张图就是复制图片，按 HangCopiedImages 决定；否则不收。"""
+    带 HTML（可能还带文字）的：HTML 里只有一张图就是复制图片，Collect 为 all 才收；否则不收。
+    Collect 为 own 时剪贴板一概不收。"""
+    if collect_mode(settings) == "own":
+        return False
     bases = [t.split(";")[0].strip().lower() for t in types]
     if not any(t.startswith("image/") for t in bases):
         return False
@@ -402,7 +420,7 @@ def clip_should_take(types, settings):
     has_text = any((t.startswith("text/") and t != "text/html") or t in PLAIN_TEXT_ATOMS for t in bases)
     if not has_html and not has_text:
         return True
-    return has_html and hang_copied_images(settings) and html_is_lone_image()
+    return has_html and collect_mode(settings) == "all" and html_is_lone_image()
 
 
 def cmd_clip():
@@ -1010,6 +1028,8 @@ def main(argv):
     try:
         if cmd == "import":
             return cmd_import(args[0], args[1] if len(args) > 1 else "文件")
+        if cmd == "auto-import":
+            return cmd_auto_import(args[0])
         if cmd == "import-b64":
             return cmd_import_b64(args[0] if args else "拖入")
         if cmd == "fetch":

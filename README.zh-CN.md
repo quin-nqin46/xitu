@@ -44,7 +44,8 @@ Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + 
 
 两边共有：
 
-- 截图文件夹和剪贴板里出现的截图自动挂上。浏览器里「复制图片」也会挂上，不想要的话在 `settings.json` 里写 `HangCopiedImages: false`（Windows 在 设置 › 通用 里关）。和表格、文字、文件一起复制的位图不挂。
+- 截图文件夹和剪贴板里出现的截图自动挂上。浏览器里「复制图片」也会挂上。和表格、文字、文件一起复制的位图不挂。
+- 自动挂哪些由 `settings.json` 的 `Collect` 决定（Windows 在 设置 › 通用 › 自动挂上）：`all`（默认，截图和复制的图片）、`screenshots`（只要截图，复制的图片不挂）、`own`（只要系图自己截的图，截图文件夹和剪贴板都不看；Linux 还没有自带截图，所以 Linux 上选 own 目前不会自动挂任何图）。拖进来的图总会挂上。
 - 单击复制，双击打开；悬停点叉取下，文件留在图库。
 - 取下时照片落下；绳子模式里照片轻摆，偶尔有微风。
 - 图库窗口保存挂过的所有照片。
@@ -153,7 +154,7 @@ Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注�
 | 路径 | 用途 | 出处 |
 |---|---|---|
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | 绳上条目（与 Windows 版同格式） | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | 设置（`ui`、`Theme`、`LibraryPath`、`RetentionDays`、`HangCopiedImages` 等） | `linux/xitu_helper.py`；`linux/shell.qml` 从同一个文件读 `ui` 字段 |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | 设置（`ui`、`Theme`、`LibraryPath`、`RetentionDays`、`Collect` 等） | `linux/xitu_helper.py`；`linux/shell.qml` 从同一个文件读 `ui` 字段 |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | 助手日志 | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | 自定义主题（id 相同则覆盖内置） | `linux/themes/README.md` |
 | 图库根目录 | `xdg-user-dir PICTURES`（取不到时用 `~/Pictures`）下的 `系图/`，可用 `LibraryPath` 改 | `linux/xitu_helper.py` |
