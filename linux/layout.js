@@ -65,6 +65,10 @@ var PositionDamping = 0.78;
 var ArriveResponse = 0.42;
 var ArriveDamping = 0.72;
 
+// 截图飞上绳子（同 Windows Layout.FlightSeconds / FlightArc）
+var FlightSeconds = 0.56;
+var FlightArc = 30;
+
 var KnotInset = 90;
 var KnotSize = 14;
 

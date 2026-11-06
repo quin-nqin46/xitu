@@ -137,7 +137,7 @@ qs ipc -p linux call xitu toggle
 bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture
 ```
 
-截到的图进图库、挂上绳子，`CopyToClipboard` 没设成 `false` 时也会复制。没装 grim / slurp 时会弹通知，请改用系统截图键（存进截图文件夹的图照样会挂上）。
+截到的图从框选处飞上绳子（同 Windows），进图库，`CopyToClipboard` 没设成 `false` 时也会复制。没装 grim / slurp 时会弹通知，请改用系统截图键（存进截图文件夹的图照样会挂上）。
 
 IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`、`openLibrary`、`gallery`、`closeGallery`、`settings`、`capture`、`quit`、`setTheme <id>`、`themes`、`nextTheme`。
 

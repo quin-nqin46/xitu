@@ -137,7 +137,7 @@ Built-in capture, like Windows Ctrl+Shift+A (needs `grim` and `slurp`; drag a re
 bind = CTRL SHIFT, A, exec, qs ipc -p /path/to/xitu/linux call xitu capture
 ```
 
-The shot goes into the gallery, hangs on the rope and, unless `CopyToClipboard` is `false`, is copied too. Without grim/slurp a notification says to use your system screenshot key instead (shots saved to the screenshot folder still hang up).
+The shot flies from where you selected it onto the rope (as on Windows), goes into the gallery and, unless `CopyToClipboard` is `false`, is copied too. Without grim/slurp a notification says to use your system screenshot key instead (shots saved to the screenshot folder still hang up).
 
 Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `settings`, `capture`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
 
