@@ -312,9 +312,22 @@ internal sealed class SettingsWindow : Window
         };
         copy.Checked += (_, _) => { if (_ready) { AppSettings.Current.CopyToClipboard = true; AppSettings.Current.Save(); } };
         copy.Unchecked += (_, _) => { if (_ready) { AppSettings.Current.CopyToClipboard = false; AppSettings.Current.Save(); } };
+        var collect = new ComboBox { Margin = new Thickness(0, 4, 0, 8), MinWidth = 200, HorizontalAlignment = HorizontalAlignment.Left };
+        foreach (var (value, label) in CollectMode.Options)
+            collect.Items.Add(new ComboBoxItem { Content = label, Tag = value });
+        collect.SelectedIndex = Math.Max(0, Array.FindIndex(CollectMode.Options, o => o.Value == AppSettings.Current.Collect));
+        collect.SelectionChanged += (_, _) =>
+        {
+            if (!_ready || collect.SelectedItem is not ComboBoxItem { Tag: string value }) return;
+            AppSettings.Current.Collect = value;
+            AppSettings.Current.Save();
+            Log.Info("收集来源改为 " + value);
+        };
         var stack = new StackPanel { Margin = new Thickness(18) };
         stack.Children.Add(start);
         stack.Children.Add(copy);
+        stack.Children.Add(new TextBlock { Text = "自动挂上", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
+        stack.Children.Add(collect);
         return new Border { Child = stack };
     }
 

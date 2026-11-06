@@ -136,6 +136,51 @@ def test_trash_reports_gio_failure(helper, library, monkeypatch, capsys):
     assert "boom" in capsys.readouterr().err
 
 
+# ---- sweep（过期清理，同 Windows Retention.cs）----
+
+def _old(helper, library, name, folder="2020-01"):
+    d = library / folder
+    d.mkdir(exist_ok=True)
+    p = d / name
+    p.write_bytes(b"x")
+    return p
+
+
+def _fake_gio(monkeypatch):
+    seen = []
+
+    def fake_run(cmd, **kw):
+        seen.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    return seen
+
+
+def test_sweep_trashes_only_expired_unkept(helper, library, monkeypatch, capsys):
+    old = _old(helper, library, "截图_20200101_000000.png")
+    kept = _old(helper, library, "截图_20200102_000000.png")
+    fav = _old(helper, library, "截图_20200103_000000.png", folder="收藏")
+    new = _old(helper, library, datetime.now().strftime("截图_%Y%m%d_%H%M%S.png"),
+               folder=datetime.now().strftime("%Y-%m"))
+    foreign = _old(helper, library, "notmine.png")
+    seen = _fake_gio(monkeypatch)
+    assert helper.cmd_sweep([str(kept)]) == 0
+    assert capsys.readouterr().out.strip() == "1"
+    assert seen == [["gio", "trash", str(old)]]
+    for p in (kept, fav, new, foreign):
+        assert p.exists()
+
+
+def test_sweep_forever_does_nothing(helper, library, monkeypatch, capsys):
+    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "RetentionDays": 0}))
+    _old(helper, library, "截图_20200101_000000.png")
+    seen = _fake_gio(monkeypatch)
+    assert helper.cmd_sweep([]) == 0
+    assert capsys.readouterr().out.strip() == "0"
+    assert seen == []
+
+
 def test_reveal_refuses_foreign_file(helper, library, tmp_path):
     assert helper.cmd_reveal(str(tmp_path / "x.png")) == 1
 
@@ -228,12 +273,63 @@ def test_clip_skips_office_bitmap(helper, library, monkeypatch, sample_png, caps
     assert capsys.readouterr().out == ""
 
 
-def test_clip_accepts_browser_copy_image(helper, library, monkeypatch, sample_png, capsys):
-    html = b'<meta charset="utf-8"><img src="https://example.com/a.png">&nbsp;'
-    monkeypatch.setattr(subprocess, "run", FakeWlPaste(
-        ["text/html", "image/png"], {"image/png": sample_png, "text/html": html}))
+BROWSER_HTML = b'<meta charset="utf-8"><img src="https://example.com/a.png">&nbsp;'
+
+
+@pytest.mark.parametrize("types", [["text/html", "image/png"], ["text/html", "text/plain", "image/png"]])
+def test_clip_accepts_browser_copy_image_by_default(helper, library, monkeypatch, sample_png, capsys, types):
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(types, {"image/png": sample_png, "text/html": BROWSER_HTML}))
     assert helper.cmd_clip() == 0
     assert capsys.readouterr().out.strip() != ""
+
+
+def _collect(helper, library, mode):
+    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "Collect": mode}))
+
+
+def test_clip_screenshots_mode_skips_copied_image(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "screenshots")
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(
+        ["text/html", "image/png"], {"image/png": sample_png, "text/html": BROWSER_HTML}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_clip_screenshots_mode_keeps_plain_image(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "screenshots")
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out.strip() != ""
+
+
+def test_clip_own_mode_takes_nothing(helper, library, monkeypatch, sample_png, capsys):
+    _collect(helper, library, "own")
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_auto_import_respects_own_mode(helper, library, tmp_path, sample_png, capsys):
+    shot = tmp_path / "shot.png"
+    shot.write_bytes(sample_png)
+    _collect(helper, library, "own")
+    assert helper.cmd_auto_import(str(shot)) == 0
+    assert capsys.readouterr().out == ""
+    _collect(helper, library, "all")
+    assert helper.cmd_auto_import(str(shot)) == 0
+    assert "截图_" in capsys.readouterr().out
+
+
+def test_collect_mode_defaults_to_all(helper):
+    assert helper.collect_mode({}) == "all"
+    assert helper.collect_mode({"Collect": "bogus"}) == "all"
+
+
+@pytest.mark.parametrize("extra", ["text/plain;charset=utf-8", "UTF8_STRING", "text/uri-list"])
+def test_clip_skips_image_with_text_or_files(helper, library, monkeypatch, sample_png, capsys, extra):
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste([extra, "image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert capsys.readouterr().out == ""
 
 
 def test_clip_skips_rtf(helper, library, monkeypatch, sample_png, capsys):
@@ -249,6 +345,16 @@ def test_clip_skips_own_copy(helper, library, monkeypatch, sample_png, capsys):
     monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
     assert helper.cmd_clip() == 0
     assert capsys.readouterr().out == ""
+
+
+def test_clip_labels_screenshot_in_custom_dir(helper, library, monkeypatch, tmp_path, sample_png, capsys):
+    shots = tmp_path / "shots"
+    shots.mkdir()
+    (shots / "s.png").write_bytes(sample_png)
+    monkeypatch.setenv("XITU_SCREENSHOT_DIR", str(shots))
+    monkeypatch.setattr(subprocess, "run", FakeWlPaste(["image/png"], {"image/png": sample_png}))
+    assert helper.cmd_clip() == 0
+    assert "截图_" in capsys.readouterr().out
 
 
 def test_clip_labels_fresh_screenshot(helper, library, monkeypatch, sample_png, capsys):
