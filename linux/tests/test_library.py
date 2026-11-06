@@ -652,6 +652,28 @@ def test_capture_cancelled(helper, library, monkeypatch, capsys):
     assert not any(c[0] == "grim" for c in calls)
 
 
+@pytest.mark.parametrize("clients, want", [
+    ([], ""),   # 空工作区、Sway 等没有 hyprctl：不能给 slurp 一个空行，否则它报 invalid box format 退出
+    ([{"at": [1, 2], "size": [3, 4], "workspace": {"id": 1}, "title": "t"}], "1,2 3x4 t\n"),
+])
+def test_capture_slurp_stdin(helper, library, monkeypatch, clients, want):
+    fed = []
+
+    def run(cmd, **kw):
+        if cmd[0] == "hyprctl":
+            data = clients if cmd[-1] == "clients" else [{"activeWorkspace": {"id": 1}}]
+            return SimpleNamespace(returncode=0, stdout=json.dumps(data))
+        if cmd[0] == "slurp":
+            fed.append(kw.get("input"))
+            return SimpleNamespace(returncode=1, stdout="")
+        raise AssertionError(cmd)
+
+    monkeypatch.setattr(helper.subprocess, "run", run)
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/" + name)
+    assert helper.cmd_capture() == 0
+    assert fed == [want]
+
+
 def test_capture_without_tools(helper, library, monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: None if name == "slurp" else "/usr/bin/" + name)
     assert helper.cmd_capture() == 3
