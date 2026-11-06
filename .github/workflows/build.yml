@@ -96,8 +96,9 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          pacman -Syu --noconfirm --needed quickshell sway grim slurp wtype wl-clipboard \
-            inotify-tools python python-pillow wqy-microhei ttf-dejavu git libcap
+          pacman -Syu --noconfirm --needed quickshell sway grim slurp wl-clipboard \
+            inotify-tools python python-pillow wqy-microhei ttf-dejavu git libcap \
+            swaybg adwaita-cursors mesa
           # Arch 的 sway 带 cap_sys_nice 文件能力，容器里 exec 会被拒（EPERM），去掉
           setcap -r /usr/bin/sway || true
           qs --version || true

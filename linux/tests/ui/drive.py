@@ -3,7 +3,7 @@
 用 ipc 和虚拟鼠标/键盘把主要功能走一遍，每步用 grim 截图，最后检查日志里有没有 QML 报错。
 
 用法：python3 linux/tests/ui/drive.py --out ui-shots
-需要：sway grim slurp wtype wl-clipboard quickshell inotify-tools python-pillow
+需要：sway swaybg grim slurp wl-clipboard quickshell inotify-tools python-pillow
 （CI 在 Arch 容器里装，见 .github/workflows/build.yml 的 linux-ui 任务）
 
 不碰真实的家目录：HOME、XDG_*、截图文件夹都指向临时目录。
@@ -34,6 +34,7 @@ REPO = Path(__file__).resolve().parents[3]
 LINUX = REPO / "linux"
 W, H = 1920, 1080
 BG = (0x55, 0x66, 0x77)
+RED = (0xB5, 0x30, 0x2A)  # layout.js 的 L.Red，卡片悬停时的红叉
 
 # ---- layout.js 里的几何（照着算卡片在哪）----
 SPACING = 174
@@ -106,7 +107,9 @@ class Run:
             "XITU_TEST_SAVE_DEST": str(t / "saved/另存的.png"),
             "PATH": f"{t / 'stubs'}:{os.environ.get('PATH', '/usr/bin')}",
             "QT_QPA_PLATFORM": "wayland",
-            "QT_QUICK_BACKEND": "software",
+            # 不用 QT_QUICK_BACKEND=software：Quickshell 的 ClippingRectangle 靠着色器，
+            # 软件后端画不出照片。走 GL，由 mesa 的 llvmpipe 在 CPU 上算。
+            "LIBGL_ALWAYS_SOFTWARE": "1",
             "LANG": "C.UTF-8",
             "WLR_BACKENDS": "headless",
             "WLR_LIBINPUT_NO_DEVICES": "1",
@@ -174,7 +177,11 @@ class Run:
             if socks and ipc:
                 self.env["WAYLAND_DISPLAY"] = socks[0].name
                 self.env["SWAYSOCK"] = str(ipc[0])
-                time.sleep(0.5)
+                time.sleep(1.0)
+                # 桌面底色以实际截到的为准（swaybg 没装时是黑的）
+                bg = self.grab((W - 10, H - 10, W - 9, H - 9)).getpixel((0, 0))
+                globals()["BG"] = bg
+                print(f"桌面底色 {bg}", flush=True)
                 return
             if p.poll() is not None:
                 break
@@ -201,12 +208,6 @@ class Run:
         if check and r.returncode != 0:
             raise RuntimeError(f"{cmd[0]} 失败：{r.stderr.strip()}")
         return r.stdout
-
-    def key(self, *keys):
-        args = []
-        for k in keys:
-            args += ["-k", k]
-        self.sh("wtype", *args)
 
     def log_text(self):
         self.qs_out.flush()
@@ -255,6 +256,21 @@ class Run:
         diff = ImageChops.difference(im, bg).convert("L").point(lambda v: 255 if v > 24 else 0)
         hist = diff.histogram()
         return hist[255] / (im.size[0] * im.size[1])
+
+    def find_color(self, box, color, tol=40):
+        """box 里接近 color 的像素的中心（屏幕坐标），没有返回 None。"""
+        im = self.grab(box)
+        px = im.load()
+        xs, ys = [], []
+        for y in range(0, im.size[1], 2):
+            for x in range(0, im.size[0], 2):
+                c = px[x, y]
+                if sum(abs(c[i] - color[i]) for i in range(3)) < tol:
+                    xs.append(x)
+                    ys.append(y)
+        if len(xs) < 6:
+            return None
+        return box[0] + sum(xs) // len(xs), box[1] + sum(ys) // len(ys)
 
     def rope_shown(self):
         # 绳子在屏幕最上面 0..220 这一条；收起时这里全是底色
@@ -358,6 +374,27 @@ class Run:
                 continue
             bad.append(line)
         return bad
+
+
+# 卡片右键菜单（Card.qml cardMenu）各项相对右键点的纵向位置。
+# Qt 菜单在指针处弹出；第一项中线在指针下 9 像素，项高 22，分隔线 2（照 CI 截图量的）。
+CARD_MENU = ["打开图库", None, "复制", "另存为…", "打开", "编辑", "收藏", "在文件管理器中显示", None, "取下"]
+
+
+def menu_pick(r, label):
+    x0, y0 = r.pointer.x, r.pointer.y
+    y = y0 + 9  # 第一项的中线
+    for item in CARD_MENU:
+        if item is None:
+            y += 2
+            continue
+        if item == label:
+            r.pointer.glide(x0 + 50, y, steps=6)
+            time.sleep(0.2)
+            r.pointer.click()
+            return
+        y += 22
+    raise ValueError(label)
 
 
 def scenario(r: Run):
@@ -485,8 +522,7 @@ def scenario(r: Run):
         r.pointer.click(button="right")
         time.sleep(0.8)
         r.shot("卡片右键菜单")
-        # 打开图库 / ─ / 复制 / 另存为…：按三下 ↓ 回车
-        r.key("Down", "Down", "Down", "Return")
+        menu_pick(r, "另存为…")
         dest = Path(r.env["XITU_TEST_SAVE_DEST"])
         r.wait_until(dest.exists, 6, f"另存为写出 {dest.name}")
         return f"zenity 参数：{r.calls('zenity')[-1][:80]}"
@@ -498,8 +534,7 @@ def scenario(r: Run):
         r.hover_reveal(4)
         r.pointer.click(button="right")
         time.sleep(0.8)
-        # 打开图库 / 复制 / 另存为… / 打开 / 编辑
-        r.key("Down", "Down", "Down", "Down", "Down", "Return")
+        menu_pick(r, "编辑")
         r.wait_until(lambda: len(r.calls("editor")) > n, 5, "菜单「编辑」调起编辑器")
         r.wait_log(r"\[xitu\] 编辑后刷新 ", 8, "第二次编辑后刷新", count=2)
     _()
@@ -574,9 +609,14 @@ def scenario(r: Run):
     def _():
         n = len(r.state_paths())
         r.hover_reveal(n)
-        # 红叉在相框左上角
-        x = int(slot_x(0, n)) - CARD_W // 2 + 4
-        r.pointer.glide(x, 32, steps=6)
+        time.sleep(0.3)
+        # 红叉在相框左上角，悬停才出现；在第一张卡片附近找红色
+        cx = int(slot_x(0, n))
+        hit = r.find_color((cx - CARD_W, 0, cx + CARD_W // 2, CARD_Y + 60), RED)
+        if hit is None:
+            r.shot("没看到红叉")
+            raise AssertionError("悬停照片后左上角没出现红叉")
+        r.pointer.glide(hit[0], hit[1], steps=6)
         time.sleep(0.3)
         r.shot("红叉")
         r.pointer.click()
