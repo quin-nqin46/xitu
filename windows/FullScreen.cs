@@ -1,8 +1,9 @@
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Clothesline;
 
-/// 前台窗口盖住整块屏幕时视为全屏，绳子不弹出。
+/// 前台窗口盖住整块屏幕时视为全屏，绳子不弹出。判定规则见 FullScreenRule。
 internal static class FullScreen
 {
     public static bool IsActive(MonitorDesc monitor)
@@ -19,12 +20,22 @@ internal static class FullScreen
         if (cls is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
             return false;
 
-        if (!NativeMethods.GetWindowRect(hwnd, out var rect)) return false;
+        if (!NativeMethods.GetWindowRect(hwnd, out var r)) return false;
         var m = monitor.Bounds;
-        const int tol = 8;
-        return rect.Left <= m.Left + tol
-            && rect.Top <= m.Top + tol
-            && rect.Right >= m.Right - tol
-            && rect.Bottom >= m.Bottom - tol;
+        return FullScreenRule.IsFullScreen(
+            new ScreenRect(r.Left, r.Top, r.Right, r.Bottom),
+            new ScreenRect(m.Left, m.Top, m.Right, m.Bottom),
+            GetStyle(hwnd));
     }
+
+    private const int GwlStyle = -16;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr64(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong32(IntPtr hwnd, int index);
+
+    private static long GetStyle(IntPtr hwnd) =>
+        IntPtr.Size == 8 ? GetWindowLongPtr64(hwnd, GwlStyle).ToInt64() : (uint)GetWindowLong32(hwnd, GwlStyle);
 }
