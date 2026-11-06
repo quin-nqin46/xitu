@@ -510,6 +510,7 @@ Item {
         Native.MenuItem { text: "打开图库"; onTriggered: card.host.openGallery() }
         Native.MenuSeparator {}
         Native.MenuItem { text: "复制"; onTriggered: card.host.copyFile(card.path) }
+        Native.MenuItem { text: "另存为…"; onTriggered: card.host.saveAs(card.path) }
         Native.MenuItem { text: "打开"; onTriggered: card.host.openFile(card.path) }
         Native.MenuItem { text: "编辑"; onTriggered: card.host.editFile(card.path) }
         Native.MenuItem {

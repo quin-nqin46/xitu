@@ -62,6 +62,7 @@ Linux (Hyprland + Quickshell):
 - Press and hold a card (or right-click › 编辑) to edit: `$XITU_EDITOR` if set (path appended, or use `{}` as placeholder), else satty or swappy (saving back to the image), else `xdg-open`. The card refreshes after saving (needs `inotifywait`).
 - Drag cards to reorder. Rope and card colors (themes) can be switched over IPC without restarting.
 - Drag an image from a browser or file manager onto the middle of the top edge: the rope comes down and takes it in.
+- Both platforms: right-click a card › 另存为… to save a copy elsewhere (the original stays in the gallery). On Linux the save dialog needs `zenity` or `kdialog`.
 - Both platforms: the rope comes down only when the pointer rests for 0.3 s on the middle of the top edge, the stretch where the photos hang (at least 320 px wide). The corners and the rest of the top edge (tabs, title bars, workspace buttons) no longer trigger it.
 
 ## Windows build and install
