@@ -11,10 +11,10 @@
 - 剪贴板规则、自动挂上设置（`Collect`）、过期清理、清空绳子、绳子容量两边一致
 - Linux 设置窗口：图库位置（可搬图）、保存时间、自动挂上、主题
 - Windows 单元测试（xunit）和主题预览图在 CI 上跑
+- Linux 编辑：长按或右键「编辑」，`$XITU_EDITOR` → satty / swappy → xdg-open，存盘后卡片刷新
 
 待做：
 
-- ~~Linux 编辑~~（进行中）
 - Linux 自带截图：grim + slurp，对应 Windows 的 Ctrl+Shift+A；没装就退回系统截图工具
 - 修顶部误触发：只在画出来的绳子上停留才展开，不再是整条顶边
 - 卡片右键「另存为」，两边一起做
