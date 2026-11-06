@@ -578,3 +578,49 @@ def test_capture_cancelled(helper, library, monkeypatch, capsys):
 def test_capture_without_tools(helper, library, monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: None if name == "slurp" else "/usr/bin/" + name)
     assert helper.cmd_capture() == 3
+
+
+# ---- 另存为 ----
+
+def test_save_as_copies_and_adds_extension(helper, library, tmp_path, capsys):
+    a = put(helper, (8, 8, 8))
+    dest = tmp_path / "out" / "给同事"
+    assert helper.cmd_save_as(str(a), str(dest)) == 0
+    saved = tmp_path / "out" / "给同事.png"
+    assert capsys.readouterr().out.strip() == str(saved)
+    assert saved.read_bytes() == a.read_bytes()
+    assert a.exists()  # 原图不动
+
+
+def test_save_as_refuses_foreign_file(helper, library, tmp_path):
+    other = tmp_path / "x.png"
+    other.write_bytes(make_image())
+    assert helper.cmd_save_as(str(other), str(tmp_path / "y.png")) == 1
+
+
+def test_save_as_onto_itself_is_noop(helper, library, capsys):
+    a = put(helper, (9, 9, 9))
+    before = a.read_bytes()
+    assert helper.cmd_save_as(str(a), str(a)) == 0
+    assert a.read_bytes() == before
+
+
+def test_save_as_dialog_cancelled(helper, library, monkeypatch, capsys):
+    a = put(helper, (10, 10, 10))
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/zenity" if name == "zenity" else None)
+    monkeypatch.setattr(helper.subprocess, "run", lambda cmd, **kw: SimpleNamespace(returncode=1, stdout=""))
+    assert helper.cmd_save_as(str(a)) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_save_as_without_dialog_tool(helper, library, monkeypatch):
+    a = put(helper, (11, 11, 11))
+    monkeypatch.setattr("shutil.which", lambda name: None)
+    assert helper.cmd_save_as(str(a)) == 3
+
+
+def test_save_dialog_prefers_zenity(helper):
+    cmd = helper.save_dialog_command("/p/a.png", lambda n: "/usr/bin/" + n)
+    assert cmd[0] == "zenity" and "--save" in cmd and "--filename=/p/a.png" in cmd
+    cmd = helper.save_dialog_command("/p/a.png", lambda n: "/usr/bin/kdialog" if n == "kdialog" else None)
+    assert cmd[:3] == ["kdialog", "--getsavefilename", "/p/a.png"]

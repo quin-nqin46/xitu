@@ -26,6 +26,8 @@
   theme-list             每行「id 显示名」
   theme-set <id>         把 settings.json 的 Theme 写成这个 id（保留其他字段），并输出主题 JSON
   theme-next             切到列表里的下一个主题，并输出主题 JSON
+  save-as <路径> [目标]   另存一份（同 Windows 右键「另存为…」）：没给目标就用 zenity / kdialog 问，
+                         输出保存位置；取消时不输出，没有对话框工具时退出码 3
   capture                自带截图：slurp 框选（拖一块、点窗口、点屏幕），grim 截下进图库，输出路径；
                          CopyToClipboard 开着（默认）就同时复制。取消时不输出；没装 grim / slurp 时退出码 3
   edit <路径>            用编辑器打开系图自己的文件：$XITU_EDITOR，否则 satty / swappy（存回原文件），否则 xdg-open。
@@ -1286,6 +1288,49 @@ def cmd_capture():
     return 0
 
 
+# ---- 另存为（同 Windows GrabArea.SaveAs）----
+
+def save_dialog_command(start, which=None):
+    """有 zenity 或 kdialog 就用它弹保存对话框（会问要不要覆盖），都没有返回 None。"""
+    import shutil
+    which = which or shutil.which
+    if which("zenity"):
+        return ["zenity", "--file-selection", "--save", "--confirm-overwrite",
+                "--title=另存为", f"--filename={start}", "--file-filter=PNG 图片 | *.png"]
+    if which("kdialog"):
+        return ["kdialog", "--getsavefilename", str(start), "*.png", "--title", "另存为"]
+    return None
+
+
+def cmd_save_as(path, dest=None):
+    """把系图自己的一张图复制一份到 dest；没给 dest 就弹对话框问。输出保存的位置，取消时不输出。
+    没加扩展名就补 .png。没有对话框工具时退出码 3。"""
+    import shutil
+    if not is_owned(path) or not Path(path).is_file():
+        print("不是图库自己的文件", file=sys.stderr)
+        return 1
+    src = Path(path).resolve()
+    if dest is None:
+        cmd = save_dialog_command(pictures_dir() / src.name)
+        if cmd is None:
+            print("没有 zenity 或 kdialog，弹不出保存对话框；可以右键「在文件管理器中显示」再复制", file=sys.stderr)
+            return 3
+        dest = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+        if not dest:
+            return 0
+    out = Path(dest).expanduser()
+    if out.suffix == "":
+        out = out.with_suffix(".png")
+    if out.exists() and out.resolve() == src:
+        print(out)
+        return 0
+    out.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src, out)
+    log(f"另存为 {out}")
+    print(out)
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__, file=sys.stderr)
@@ -1336,6 +1381,8 @@ def main(argv):
             return cmd_theme_set(args[0] if args else "")
         if cmd == "theme-next":
             return cmd_theme_next()
+        if cmd == "save-as":
+            return cmd_save_as(args[0], args[1] if len(args) > 1 else None)
         if cmd == "capture":
             return cmd_capture()
         if cmd == "edit":
