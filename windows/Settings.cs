@@ -128,8 +128,9 @@ internal sealed class AppSettings
                 LibraryPath = LibraryPath,
                 Theme = Theme,
                 RetentionDays = RetentionDays,
-                GalleryLeft = GalleryLeft,
-                GalleryTop = GalleryTop,
+                // 没摆过图库窗口时是 NaN；JSON 写不了 NaN，整个 settings.json 会写失败，存成 null
+                GalleryLeft = double.IsFinite(GalleryLeft) ? GalleryLeft : null,
+                GalleryTop = double.IsFinite(GalleryTop) ? GalleryTop : null,
                 GalleryWidth = GalleryWidth,
                 GalleryHeight = GalleryHeight,
             };
