@@ -314,8 +314,12 @@ internal static class Library
                 var rel = Path.GetRelativePath(oldRoot, file);
                 var target = Path.Combine(dest, rel);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                // 重名按 _2、_3… 另起，和导入一样；加随机后缀的话名字不再合 NamePattern，搬过去就不算系图的文件了
                 if (File.Exists(target))
-                    target = Path.Combine(Path.GetDirectoryName(target)!, Path.GetFileNameWithoutExtension(target) + "_" + Guid.NewGuid().ToString("N")[..6] + ".png");
+                {
+                    var item = Parse(file);
+                    target = UniquePath(Path.GetDirectoryName(target)!, item.Source, item.Taken);
+                }
                 File.Move(file, target);
                 line.Relocate(file, target);
             }
@@ -403,7 +407,7 @@ internal static class Library
             path = Path.Combine(dir, $"{label}_{stamp}_{n}.png");
             if (!File.Exists(path)) return path;
         }
-        return Path.Combine(dir, $"{label}_{stamp}_{Guid.NewGuid():N}.png");
+        return Path.Combine(dir, $"{label}_{stamp}_{DateTime.Now.Ticks}.png");
     }
 
     private static void EnsureScan()

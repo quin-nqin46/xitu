@@ -678,7 +678,7 @@ PanelWindow {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: shell.log("设置窗口这一轮没做")
+                    onClicked: win.shell.openSettings()
                 }
             }
 

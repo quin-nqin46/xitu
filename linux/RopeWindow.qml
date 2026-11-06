@@ -553,6 +553,7 @@ PanelWindow {
 
         Native.MenuItem { text: "打开图库"; onTriggered: win.openGallery() }
         Native.MenuItem { text: "打开图库文件夹"; onTriggered: win.openLibrary() }
+        Native.MenuItem { text: "设置…"; onTriggered: win.shell.openSettings() }
         Native.MenuItem { text: "清空绳子"; enabled: win.shell.version >= 0 && win.shell.livePaths().length > 0; onTriggered: win.shell.clear() }
         Native.Menu {
             id: themeMenu
