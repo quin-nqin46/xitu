@@ -467,3 +467,44 @@ def test_library_move_refuses_inside_old_library(helper, library):
 
 def test_library_move_refuses_relative_path(helper, library):
     assert helper.cmd_library_move("relative/dir", "1") == 1
+
+
+# ---- 编辑 ----
+
+def _which(*have):
+    return lambda name: "/usr/bin/" + name if name in have else None
+
+
+def test_editor_prefers_env(helper):
+    name, cmd = helper.editor_command("/p/a.png", {"XITU_EDITOR": "gimp -n"}, _which("satty"))
+    assert name == "gimp" and cmd == ["gimp", "-n", "/p/a.png"]
+
+
+def test_editor_env_placeholder(helper):
+    _, cmd = helper.editor_command("/p/a b.png", {"XITU_EDITOR": "pinta --open {}"}, _which())
+    assert cmd == ["pinta", "--open", "/p/a b.png"]
+
+
+@pytest.mark.parametrize("have, name, cmd", [
+    (("satty", "swappy"), "satty", ["satty", "--filename", "/p/a.png", "--output-filename", "/p/a.png"]),
+    (("swappy",), "swappy", ["swappy", "-f", "/p/a.png", "-o", "/p/a.png"]),
+    ((), "xdg-open", ["xdg-open", "/p/a.png"]),
+])
+def test_editor_fallbacks(helper, have, name, cmd):
+    assert helper.editor_command("/p/a.png", {}, _which(*have)) == (name, cmd)
+
+
+def test_edit_refuses_foreign_file(helper, library, tmp_path):
+    other = tmp_path / "x.png"
+    other.write_bytes(make_image())
+    assert helper.cmd_edit(str(other)) == 1
+
+
+def test_edit_launches_editor(helper, library, monkeypatch, capsys):
+    a = put(helper, (7, 7, 7))
+    launched = []
+    monkeypatch.setattr(helper.subprocess, "Popen", lambda cmd, **kw: launched.append(cmd))
+    monkeypatch.setenv("XITU_EDITOR", "myedit")
+    assert helper.cmd_edit(str(a)) == 0
+    assert launched == [["myedit", str(a.resolve())]]
+    assert capsys.readouterr().out.strip() == "myedit"

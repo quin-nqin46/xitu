@@ -103,6 +103,7 @@ PanelWindow {
 
     function copyFile(path) { shell.copyFile(path); }
     function openFile(path) { shell.openFile(path); }
+    function editFile(path) { shell.editFile(path); }
     function discard(id) { shell.discard(id); }
     function setFavorite(path, on) { shell.setFavorite(path, on); }
     function revealFile(path) { shell.revealFile(path); }
