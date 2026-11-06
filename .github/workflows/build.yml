@@ -83,3 +83,29 @@ jobs:
         run: |
           python -m pip install --quiet pytest pillow
           python -m pytest -q linux/tests
+
+  # 没人能在真机上点 Linux 版：在 Arch 容器里起无头 Sway，真的跑 qs -p linux，
+  # 用 ipc + 虚拟鼠标/键盘把主要功能走一遍，每步截图；日志里有 QML 警告/错误就失败。
+  linux-ui:
+    name: Linux UI (headless Sway + Quickshell)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 20
+    steps:
+      - name: Install packages
+        run: |
+          pacman -Syu --noconfirm --needed quickshell sway grim slurp wtype wl-clipboard \
+            inotify-tools python python-pillow wqy-microhei ttf-dejavu git
+          qs --version || true
+
+      - uses: actions/checkout@v4
+
+      - name: Drive the UI
+        run: python linux/tests/ui/drive.py --out ui-shots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-ui-shots
+          path: ui-shots/
+          retention-days: 14
