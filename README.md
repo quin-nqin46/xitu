@@ -131,7 +131,7 @@ Keyboard shortcuts and menu entries talk over IPC:
 qs ipc -p linux call xitu toggle
 ```
 
-Functions on IPC target `xitu`: `toggle`, `peek`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
+Functions on IPC target `xitu`: `toggle`, `peek`, `clear`, `hang <path>`, `openLibrary`, `gallery`, `closeGallery`, `quit`, `setTheme <id>`, `themes`, `nextTheme`.
 
 ## Caelestia integration (optional)
 

@@ -16,6 +16,8 @@
                          retention、occupied、capture。不读文件内容
   favorite <路径> <0|1>  收藏或取消。在「收藏」和对应月份文件夹之间移动，重名按原版另起 _n。只对 IsOwned 生效，输出新路径
   trash <路径>           把系图自己的文件放进回收站（gio trash）。别的路径拒绝，退出码 1
+  sweep [绳上路径]...    过期清理（同 Windows Retention.cs）：超过 RetentionDays、没收藏、不在绳上的进回收站，
+                         输出清理张数。RetentionDays 为 0（永久）时什么也不做
   reveal <路径>          在文件管理器中显示。只对 IsOwned 生效
   screenshot-dir         输出要盯的截图文件夹：$XITU_SCREENSHOT_DIR，否则「图片」目录下已有的
                          Screenshots 或 屏幕截图，都没有就用 Screenshots
@@ -39,7 +41,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 HOME = Path.home()
@@ -55,7 +57,9 @@ NAME_PATTERN = re.compile(r"^(截图|剪贴板|拖入|文件|其他)_(\d{8})_(\d
 MONTH_FOLDER = re.compile(r"^\d{4}-\d{2}$")
 FAVORITES = "收藏"
 # 剪贴板里同时有这些文字格式时不当截图（WPS 复制单元格也会带位图）
-TEXT_TYPES = ("text/html", "text/rtf", "application/rtf", "text/richtext")
+TEXT_TYPES = ("text/html", "text/rtf", "application/rtf", "text/richtext", "text/uri-list")
+# X11 风格的纯文本类型名，经 XWayland 复制时会出现
+PLAIN_TEXT_ATOMS = ("utf8_string", "string", "text", "compound_text")
 OWN_CLIP_SECONDS = 30
 FETCH_TIMEOUT = 15
 FETCH_MAX = 30 * 1024 * 1024
@@ -362,32 +366,24 @@ def clip_types():
     return [t.strip() for t in r.stdout.splitlines() if t.strip()]
 
 
-def html_is_lone_image():
-    """剪贴板的 text/html 是不是只有一张图（浏览器「复制图片」会附一个 <img> 标签）。
-    WPS 复制单元格附带的是表格和文字，不算。读不到也不算。"""
-    try:
-        html = subprocess.run(
-            ["wl-paste", "--no-newline", "--type", "text/html"],
-            capture_output=True, timeout=3,
-        ).stdout[:200_000].decode("utf-8", "replace")
-    except subprocess.TimeoutExpired:
+def clip_is_capture(types):
+    """规则同 Windows 版 ScreenshotWatcher.LooksLikeCapturedBitmap：
+    截图工具只放图片格式。带文件列表的是复制文件；带文字、HTML、RTF 的是办公软件复制单元格、
+    浏览器复制图片这类，都不算截图。"""
+    if not any(t.startswith("image/") for t in types):
         return False
-    if not re.search(r"<img\b", html, re.I) or re.search(r"<(table|td|tr)\b", html, re.I):
-        return False
-    text = re.sub(r"<[^>]*>", "", html)
-    text = re.sub(r"&nbsp;|&#160;", "", text)
-    return text.strip() == ""
+    for t in types:
+        base = t.split(";")[0].strip().lower()
+        if base in TEXT_TYPES or base.startswith("text/") or base in PLAIN_TEXT_ATOMS:
+            return False
+    return True
 
 
 def cmd_clip():
     types = clip_types()
-    image = next((t for t in types if t == "image/png"), None) or next((t for t in types if t.startswith("image/")), None)
-    if not image:
+    if not clip_is_capture(types):
         return 0
-    # 带富文本的多半是办公软件复制单元格顺带的位图，不收；但浏览器复制图片也带一个只有 <img> 的 text/html，要收
-    rich = [t for t in types if t in TEXT_TYPES]
-    if rich and not (rich == ["text/html"] and html_is_lone_image()):
-        return 0
+    image = next((t for t in types if t == "image/png"), None) or next(t for t in types if t.startswith("image/"))
     # timeout 到了 subprocess.run 抛 TimeoutExpired，不会把半截 stdout 当成成功结果返回。
     # 异常对象里仍可能带着已经读到的字节，这里不用，直接放弃。
     # 复制刚发生时读取偶尔会超时，隔一秒再试一次。
@@ -418,7 +414,7 @@ def cmd_clip():
     # 截图键会同时写文件夹和剪贴板；剪贴板这路先到时，按截图记，免得来源标成「剪贴板」
     label = "剪贴板"
     digest = sha256_bytes(data)
-    shots = pictures_dir() / "屏幕截图"
+    shots = screenshot_dir()
     try:
         for f in shots.iterdir():
             if f.suffix.lower() == ".png" and time.time() - f.stat().st_mtime < 5 and sha256_bytes(f.read_bytes()) == digest:
@@ -482,14 +478,18 @@ def load_settings():
         return {}
 
 
-def retention_label(settings):
+def retention_days(settings):
     days = settings.get("RetentionDays")
     if days is None:
-        days = 30
+        return 30
     try:
-        days = int(days)
+        return int(days)
     except (TypeError, ValueError):
-        days = 30
+        return 30
+
+
+def retention_label(settings):
+    days = retention_days(settings)
     return {7: "7 天", 30: "30 天", 90: "90 天", 365: "1 年", 0: "永久"}.get(days, f"{days} 天")
 
 
@@ -630,6 +630,39 @@ def cmd_trash(path):
         return 1
     log("图库进回收站 " + str(src))
     print(src)
+    return 0
+
+
+def cmd_sweep(keep):
+    """同 Windows 版 Retention.SweepNow。绳上的路径由调用方传进来。"""
+    days = retention_days(load_settings())
+    if days <= 0:
+        log("保存时间为永久，跳过清理")
+        print(0)
+        return 0
+    cutoff = datetime.now() - timedelta(days=days)
+    keep_set = set()
+    for k in keep:
+        try:
+            keep_set.add(str(Path(k).resolve()))
+        except OSError:
+            keep_set.add(k)
+    n = 0
+    for path in owned_files(library_root()):
+        if path.parent.name == FAVORITES:
+            continue
+        if str(path.resolve()) in keep_set:
+            continue
+        parsed = _stamp_of(path.name)
+        if not parsed or parsed[0] >= cutoff:
+            continue
+        result = subprocess.run(["gio", "trash", str(path)], capture_output=True, text=True)
+        if result.returncode != 0:
+            log("无法放入回收站: " + (result.stderr or result.stdout or "").strip())
+            continue
+        n += 1
+    log(f"清理过期 {n} 张")
+    print(n)
     return 0
 
 
@@ -979,6 +1012,8 @@ def main(argv):
             return cmd_favorite(args[0], args[1] if len(args) > 1 else "")
         if cmd == "trash":
             return cmd_trash(args[0])
+        if cmd == "sweep":
+            return cmd_sweep(args)
         if cmd == "reveal":
             return cmd_reveal(args[0])
         if cmd == "theme-current":

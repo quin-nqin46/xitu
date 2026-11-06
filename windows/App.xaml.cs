@@ -71,6 +71,7 @@ public partial class App : Application
         {
             if (_line != null && _screens != null) GalleryWindow.Show(_line, _screens);
         };
+        GalleryWindow.Launcher = gallery;
         var taken = new List<string>();
         if (!_hotkey.TryReplace(HotKey.CaptureId, AppSettings.Current.Capture, capture, "截图"))
             taken.Add($"截图 {AppSettings.Current.Capture.Format()}");

@@ -116,6 +116,17 @@ Scope {
         save();
     }
 
+    // 清空绳子（Windows 托盘「清空绳子」）。文件留在图库。
+    function clear() {
+        var live = livePaths();
+        if (live.length === 0) return;
+        for (var i = 0; i < lineModel.count; i++)
+            if (!lineModel.get(i).gone) takeOff(i);
+        version++;
+        save();
+        log("清空绳子");
+    }
+
     function moveEntry(id, slot) {
         var from = indexOfId(id);
         if (from < 0) return;
@@ -409,6 +420,35 @@ Scope {
         }
     }
 
+    // ---- 过期清理：同 Windows 版 Retention.cs，启动 1 分钟后一次，之后每 6 小时 ----
+    Timer {
+        id: sweepTimer
+        interval: 60 * 1000
+        running: root.restored
+        repeat: true
+        onTriggered: {
+            interval = 6 * 3600 * 1000;
+            if (sweepProc.running) return;
+            sweepProc.command = ["python3", root.helper, "sweep"].concat(root.livePaths());
+            sweepProc.running = true;
+        }
+    }
+    Process {
+        id: sweepProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var n = parseInt(text.trim());
+                if (n > 0) {
+                    root.log("清理过期 " + n + " 张");
+                    root.libraryTick++;
+                }
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") root.log(text.trim());
+        }
+    }
+
     // 打开图库文件夹。Quickshell 0.3.2 的 SystemTray 只能显示别人的托盘项，发不出自己的。
     Process {
         id: libRoot
@@ -427,6 +467,7 @@ Scope {
         target: "xitu"
         function toggle(): void { root.toggleRequested(); }
         function peek(): void { root.peekRequested(); }
+        function clear(): void { root.clear(); }
         function hang(path: string): void { root.importFile(path, "文件"); }
         function openLibrary(): void { root.openLibrary(); }
         function gallery(): void { root.openGallery(); }
