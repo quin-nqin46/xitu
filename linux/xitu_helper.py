@@ -26,6 +26,8 @@
   theme-list             每行「id 显示名」
   theme-set <id>         把 settings.json 的 Theme 写成这个 id（保留其他字段），并输出主题 JSON
   theme-next             切到列表里的下一个主题，并输出主题 JSON
+  edit <路径>            用编辑器打开系图自己的文件：$XITU_EDITOR，否则 satty / swappy（存回原文件），否则 xdg-open。
+                         输出编辑器名字，不等编辑器退出
   settings-get           设置窗口用：一行 JSON，当前图库位置、保存时间、Collect、主题和各自的可选项，图库张数和占用
   settings-set <键> <值> 改 RetentionDays（7/30/90/365/0）或 Collect（all/screenshots/own），其他字段保留
   library-move <目录> <0|1>  换图库位置；1 时把系图自己的文件搬过去（同 Library.ChangeRoot），
@@ -1165,6 +1167,51 @@ def cmd_pick_folder(start):
     return 0
 
 
+# ---- 编辑（同 Windows 长按 / 「用画图编辑」）----
+
+def editor_command(path, env=None, which=None):
+    """按顺序挑编辑器：$XITU_EDITOR（可带参数，路径接在最后；写了 {} 就替换成路径），
+    然后 satty、swappy（都存回原文件），都没有就交给 xdg-open。返回 (名字, 命令)。"""
+    import shlex
+    import shutil
+    env = os.environ if env is None else env
+    which = which or shutil.which
+    custom = (env.get("XITU_EDITOR") or "").strip()
+    if custom:
+        try:
+            parts = shlex.split(custom)
+        except ValueError:
+            parts = []
+        if parts:
+            if any("{}" in a for a in parts):
+                parts = [a.replace("{}", path) for a in parts]
+            else:
+                parts.append(path)
+            return parts[0], parts
+    if which("satty"):
+        return "satty", ["satty", "--filename", path, "--output-filename", path]
+    if which("swappy"):
+        return "swappy", ["swappy", "-f", path, "-o", path]
+    return "xdg-open", ["xdg-open", path]
+
+
+def cmd_edit(path):
+    """打开编辑器后马上返回，输出用的编辑器名字。只编辑系图自己的文件。"""
+    if not is_owned(path) or not Path(path).is_file():
+        print("不是图库自己的文件，拒绝编辑", file=sys.stderr)
+        return 1
+    name, cmd = editor_command(str(Path(path).resolve()))
+    try:
+        subprocess.Popen(cmd, start_new_session=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError as e:
+        print(f"打不开编辑器 {name}：{e}", file=sys.stderr)
+        return 1
+    log(f"编辑 {path}（{name}）")
+    print(name)
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__, file=sys.stderr)
@@ -1215,6 +1262,8 @@ def main(argv):
             return cmd_theme_set(args[0] if args else "")
         if cmd == "theme-next":
             return cmd_theme_next()
+        if cmd == "edit":
+            return cmd_edit(args[0])
         if cmd == "settings-get":
             return cmd_settings_get()
         if cmd == "settings-set":
