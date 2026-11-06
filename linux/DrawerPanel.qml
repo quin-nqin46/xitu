@@ -3,6 +3,7 @@ import QtQuick.Shapes
 import Qt.labs.platform as Native
 import Quickshell.Widgets
 import "layout.js" as L
+import "fonts.js" as F
 
 // 抽屉的本体（展开态的全部内容）：Caelestia 风格的底板 + 左边最新大图 + 右边 3×2 小格。
 // 窗口壳和悬停逻辑在 DrawerWindow.qml；这里只依赖 shell 的现有函数，
@@ -124,7 +125,7 @@ Item {
             text: "松手放进系图"
             color: panel.theme.drawerPrimary
             font.pixelSize: 14
-            font.family: "HarmonyOS Sans SC"
+            font.family: F.ui
         }
     }
 
@@ -135,7 +136,7 @@ Item {
         text: "还没有截图"
         color: panel.theme.drawerFgDim
         font.pixelSize: 13
-        font.family: "HarmonyOS Sans SC"
+        font.family: F.ui
         visible: items.count === 0
     }
 
@@ -227,7 +228,7 @@ Item {
                         text: L.timeAgo(tile.path)
                         color: "white"
                         font.pixelSize: 11
-                        font.family: "HarmonyOS Sans SC"
+                        font.family: F.ui
                     }
                 }
             }

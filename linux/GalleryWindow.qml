@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "fonts.js" as F
 
 // 图库内容照 GalleryWindow.cs。承载是聚焦屏上的 layer-shell 浮层：
 // 同一个窗口铺满整屏，面板以外的透明区域接收点击就关。namespace xitu-gallery。
@@ -73,7 +74,7 @@ PanelWindow {
     property real savedY: 0
     property string retention: "30 天"
     property int occupied: 0
-    property string capture: "Super+Shift+S"
+    property string capture: "Ctrl+Shift+A"
     property string favLabel: "收藏"
     property int menuCount: 0
     property var pendingDelete: []
@@ -655,7 +656,7 @@ PanelWindow {
                 color: "#2E3440"
                 font.pixelSize: 20
                 font.weight: Font.DemiBold
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.leftMargin: 16
@@ -667,7 +668,7 @@ PanelWindow {
                 text: "设置…"
                 color: win.shell.theme.clipColor
                 font.pixelSize: 12
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
@@ -687,7 +688,7 @@ PanelWindow {
                 text: "保存 " + win.retention + " · 占用 " + win.formatSize(win.occupied)
                 color: "#8A8478"
                 font.pixelSize: 11
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
                 wrapMode: Text.Wrap
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -747,7 +748,7 @@ PanelWindow {
                                 text: modelData.label
                                 color: "#2E3440"
                                 font.pixelSize: 13
-                                font.family: "HarmonyOS Sans SC"
+                                font.family: F.ui
                             }
 
                             Text {
@@ -757,7 +758,7 @@ PanelWindow {
                                 text: win.countOf(modelData.key)
                                 color: "#8A8478"
                                 font.pixelSize: 12
-                                font.family: "HarmonyOS Sans SC"
+                                font.family: F.ui
                             }
 
                             MouseArea {
@@ -817,7 +818,7 @@ PanelWindow {
                         color: "#2E3440"
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
-                        font.family: "HarmonyOS Sans SC"
+                        font.family: F.ui
                     }
 
                     Row {
@@ -840,7 +841,7 @@ PanelWindow {
                 wrapMode: Text.Wrap
                 color: "#8A8478"
                 font.pixelSize: 14
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
                 text: "还没有图。截一张试试：" + win.capture
             }
         }
@@ -971,7 +972,7 @@ PanelWindow {
                             wrapMode: Text.Wrap
                             color: "#2E3440"
                             font.pixelSize: 13
-                            font.family: "HarmonyOS Sans SC"
+                            font.family: F.ui
                         }
 
                         Row {
@@ -991,7 +992,7 @@ PanelWindow {
                                     text: "取消"
                                     color: "#2E3440"
                                     font.pixelSize: 13
-                                    font.family: "HarmonyOS Sans SC"
+                                    font.family: F.ui
                                 }
                                 MouseArea {
                                     id: cancelHit
@@ -1015,7 +1016,7 @@ PanelWindow {
                                     text: "确定"
                                     color: win.shell.theme.clipColor
                                     font.pixelSize: 13
-                                    font.family: "HarmonyOS Sans SC"
+                                    font.family: F.ui
                                 }
                                 MouseArea {
                                     id: okHit
@@ -1047,7 +1048,7 @@ PanelWindow {
             text: menuRow.label
             color: menuRow.enabledRow ? menuRow.fg : "#B0AAA0"
             font.pixelSize: 13
-            font.family: "HarmonyOS Sans SC"
+            font.family: F.ui
         }
         MouseArea {
             id: rowHit
@@ -1136,7 +1137,7 @@ PanelWindow {
                 text: String(thumb.item.time).slice(11, 16)
                 color: "#8A8478"
                 font.pixelSize: 11
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
             }
 
             Rectangle {

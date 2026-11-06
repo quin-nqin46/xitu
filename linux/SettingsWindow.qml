@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "fonts.js" as F
 
 // 设置窗口，内容照 Windows 版 SettingsWindow.cs 的「图库」「通用」两页，外加主题。
 // 普通的浮动窗口（xdg toplevel），和图库浮层分开；从图库打开时图库先关掉，免得浮层盖住它。
@@ -17,7 +18,7 @@ FloatingWindow {
     implicitHeight: 600
     minimumSize: Qt.size(460, 520)
 
-    readonly property string fontFamily: "HarmonyOS Sans SC"
+    readonly property string fontFamily: F.ui
     readonly property color ink: "#2E3440"
     readonly property color mute: "#8A8478"
     readonly property color line: "#D9D0C1"
@@ -171,14 +172,14 @@ FloatingWindow {
     // ---- 小部件（内联组件看不到外面的 id，颜色写死，强调色从外面传）----
     component Heading: Text {
         color: "#2E3440"
-        font.family: "HarmonyOS Sans SC"
+        font.family: F.ui
         font.pixelSize: 13
         font.weight: Font.DemiBold
     }
 
     component Note: Text {
         color: "#8A8478"
-        font.family: "HarmonyOS Sans SC"
+        font.family: F.ui
         font.pixelSize: 12
         wrapMode: Text.Wrap
     }
@@ -198,7 +199,7 @@ FloatingWindow {
             anchors.centerIn: parent
             text: btn.text
             color: btn.enabled ? "#2E3440" : "#8A8478"
-            font.family: "HarmonyOS Sans SC"
+            font.family: F.ui
             font.pixelSize: 12
         }
         MouseArea {
@@ -239,7 +240,7 @@ FloatingWindow {
             Text {
                 text: choice.text
                 color: "#2E3440"
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
                 font.pixelSize: 12
                 anchors.verticalCenter: parent.verticalCenter
             }

@@ -39,6 +39,35 @@ Xitu started as a port of [Tendedero](https://github.com/alejandrobujan/tendeder
 | `docs/` | demo images |
 | `LICENSE`, `NOTICE` | licensing |
 
+## Install
+
+### Windows
+
+1. Download `Xitu-<version>-win-x64.zip` from [Releases](https://github.com/quin-nqin46/xitu/releases/latest) and unzip it somewhere permanent (for example `D:\Apps\Xitu\`).
+2. Double-click `Xitu.exe`. The .NET runtime is bundled; nothing else to install.
+3. On first launch Windows SmartScreen may say "Windows protected your PC" (the app is not code-signed): click "More info" → "Run anyway".
+4. Xitu lives in the tray. To start it with Windows: right-click the tray icon › 开机自启 (start at login).
+
+Capture with Ctrl+Shift+A. If another app (WeChat, QQ, …) already owns that key, Xitu says so; pick another key in Settings › Hotkeys.
+
+### Linux (Hyprland)
+
+1. Download `xitu-<version>-linux.tar.gz` from [Releases](https://github.com/quin-nqin46/xitu/releases/latest) and extract it, or `git clone` this repository.
+2. From the extracted folder (or the repository root) run:
+
+   ```
+   sh linux/install.sh
+   ```
+
+   The script checks dependencies and prints the install command for your distro when something is missing (it never runs sudo itself); copies the app to `~/.local/share/Xitu/app` and a `xitu` command to `~/.local/bin/xitu`; writes `~/.config/hypr/xitu.conf` (start at login, Ctrl+Shift+A to capture) and asks before adding a `source` line for it to `hyprland.conf`. Run inside Hyprland, it starts Xitu right away.
+3. After installing any missing packages, run `xitu start` (or log in again).
+
+Required packages: quickshell, python3 with Pillow, wl-clipboard, inotify-tools, xdg-utils, gio (glib2). Optional: grim and slurp (built-in capture), xdg-user-dirs, libnotify (notifications about missing packages), zenity or kdialog (Save As, folder picker), satty or swappy (editing). `sh linux/install.sh --check` only checks. At startup Xitu also shows a notification if a required package is missing.
+
+Everyday commands: `xitu` (show or hide the rope), `xitu capture`, `xitu gallery`, `xitu settings`, `xitu quit`. Uninstall with `sh linux/install.sh --uninstall`; the gallery and settings are kept.
+
+If something else in `hyprland.conf` is already bound to Ctrl+Shift+A, both will fire; edit the `bind` line in `~/.config/hypr/xitu.conf`. Only Hyprland is fully supported for now; GNOME and X11 are not supported.
+
 ## Features
 
 Both platforms:
@@ -66,7 +95,7 @@ Linux (Hyprland + Quickshell):
 - Both platforms: right-click a card › 另存为… to save a copy elsewhere (the original stays in the gallery). On Linux the save dialog needs `zenity` or `kdialog`.
 - Both platforms: the rope comes down only when the pointer rests for 0.3 s on the middle of the top edge, the stretch where the photos hang (at least 320 px wide). The corners and the rest of the top edge (tabs, title bars, workspace buttons) no longer trigger it.
 
-## Windows build and install
+## Building Windows from source
 
 Requires the .NET 8 SDK.
 
@@ -80,11 +109,13 @@ Building on a non-Windows machine needs `-p:EnableWindowsTargeting=true`:
 dotnet build windows/ -p:EnableWindowsTargeting=true
 ```
 
-Publish example (single file, uses the installed .NET runtime):
+Publish (single file with the .NET runtime bundled, same as the release download):
 
 ```
-dotnet publish windows/ -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
+dotnet publish windows/ -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
 ```
+
+To cut a release, push a `v*` tag (`git tag v0.2.0 && git push origin v0.2.0`). `.github/workflows/release.yml` builds the Windows zip and the Linux tarball, smoke-tests both, and publishes a GitHub Release.
 
 Regenerate the icon:
 
@@ -100,7 +131,7 @@ Runtime files (source: `windows/AppPaths.cs`):
 - Clipboard staging: `%LOCALAPPDATA%\Xitu\Inbox\`
 - Gallery: `%USERPROFILE%\Pictures\系图\` (default; changeable in settings)
 
-## Linux dependencies and running
+## Running Linux from source
 
 Dependencies — only what the code actually calls:
 
@@ -111,7 +142,7 @@ Dependencies — only what the code actually calls:
 - inotify-tools: `inotifywait` (screenshot folder watch).
 - xdg-utils and gio: `xdg-open`, `xdg-user-dir PICTURES`, and `gio trash` (gallery deletion goes to the trash).
 
-The Linux version does not capture screenshots itself; it picks them up from the screenshot folder and the clipboard.
+The steps below run Xitu straight from the repository without the install script (for development).
 
 Tests for the helper script (need pytest and Pillow, plus node for the shared `layout.js` cases; no Wayland or desktop required):
 
@@ -155,7 +186,7 @@ Optional accent for rope themes whose color is `accent`: point two environment v
 
 ## Config and data files
 
-Windows paths are listed under "Windows build and install". Linux paths, with the source file that defines each:
+Windows paths are listed under "Building Windows from source". Linux paths, with the source file that defines each:
 
 | Path | Purpose | Defined in |
 |---|---|---|
@@ -164,7 +195,7 @@ Windows paths are listed under "Windows build and install". Linux paths, with th
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | helper log | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | custom themes (same id overrides the built-in) | `shared/themes/README.md` |
 | gallery root | `系图/` under `xdg-user-dir PICTURES` (falls back to `~/Pictures`), overridable via `LibraryPath` | `linux/xitu_helper.py` |
-| screenshot folder | watched for new screenshots: `$XITU_SCREENSHOT_DIR` if set, otherwise `Screenshots/` (or an existing `屏幕截图/`) under the Pictures folder | `linux/xitu_helper.py` (`screenshot-dir`) |
+| screenshot folder | watched for new screenshots: only `$XITU_SCREENSHOT_DIR` if set; else `XDG_SCREENSHOTS_DIR`; else existing `Screenshots/` and `屏幕截图/` under Pictures plus the Pictures folder itself (where grim, grimblast and hyprshot save by default; there only files named like screenshots are taken). Only existing folders are watched; none are created | `linux/xitu_helper.py` (`screenshot-dirs`) |
 
 ## Acknowledgments and license
 
