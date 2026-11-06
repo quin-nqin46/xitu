@@ -380,3 +380,90 @@ def test_main_no_args_prints_usage(helper, capsys):
 def test_main_logs_exceptions(helper, capsys):
     assert helper.main(["import"]) == 1       # 缺参数 -> IndexError，被兜住
     assert "import 失败" in helper.LOG_FILE.read_text(encoding="utf-8")
+
+
+# ---- 设置窗口 ----
+
+def test_settings_get_defaults(helper, library, capsys):
+    put(helper, (9, 0, 0))
+    assert helper.cmd_settings_get() == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["libraryPath"] == str(library)
+    assert data["retentionDays"] == 30
+    assert [o["days"] for o in data["retentionOptions"]] == [7, 30, 90, 365, 0]
+    assert data["collect"] == "all"
+    assert [o["value"] for o in data["collectOptions"]] == ["all", "screenshots", "own"]
+    assert data["theme"] == "polaroid-blue"
+    assert any(t["id"] == "red-rope" for t in data["themes"])
+    assert data["count"] == 1
+    assert data["occupied"] > 0
+
+
+@pytest.mark.parametrize("key, value, stored", [("RetentionDays", "7", 7), ("RetentionDays", "0", 0), ("Collect", "own", "own")])
+def test_settings_set_keeps_other_fields(helper, library, key, value, stored):
+    assert helper.cmd_settings_set(key, value) == 0
+    data = json.loads(helper.SETTINGS_FILE.read_text(encoding="utf-8"))
+    assert data[key] == stored
+    assert data["LibraryPath"] == str(library)
+
+
+@pytest.mark.parametrize("key, value", [("RetentionDays", "14"), ("RetentionDays", "x"), ("Collect", "nope"), ("Theme", "red-rope")])
+def test_settings_set_rejects_bad_values(helper, library, key, value):
+    before = helper.SETTINGS_FILE.read_text(encoding="utf-8")
+    assert helper.cmd_settings_set(key, value) == 1
+    assert helper.SETTINGS_FILE.read_text(encoding="utf-8") == before
+
+
+def test_library_move_moves_owned_files_only(helper, library, tmp_path, capsys):
+    a = put(helper, (1, 2, 3))
+    fav = helper.import_bytes(make_image(color=(4, 5, 6)), "剪贴板", WHEN)
+    assert helper.cmd_favorite(str(fav), "1") == 0
+    fav = library / "收藏" / fav.name
+    stray = library / "2026-03" / "notes.png"
+    stray.write_bytes(b"x")
+    capsys.readouterr()
+    dest = tmp_path / "elsewhere"
+    assert helper.cmd_library_move(str(dest), "1") == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["root"] == str(dest.resolve())
+    pairs = {old: new for old, new in out["moved"]}
+    assert pairs[str(a.resolve())] == str((dest / "2026-03" / a.name).resolve())
+    assert pairs[str(fav.resolve())] == str((dest / "收藏" / fav.name).resolve())
+    assert stray.exists()  # 别人的文件不碰
+    assert not a.exists()
+    assert helper.library_root() == dest.resolve()
+
+
+def test_library_move_without_moving_keeps_files(helper, library, tmp_path, capsys):
+    a = put(helper, (1, 2, 3))
+    capsys.readouterr()
+    dest = tmp_path / "fresh"
+    assert helper.cmd_library_move(str(dest), "0") == 0
+    assert json.loads(capsys.readouterr().out)["moved"] == []
+    assert a.exists()
+    assert (dest / "收藏").is_dir()
+    assert helper.library_root() == dest.resolve()
+
+
+def test_library_move_renames_on_clash(helper, library, tmp_path, capsys):
+    a = put(helper, (1, 2, 3))
+    dest = tmp_path / "other"
+    (dest / "2026-03").mkdir(parents=True)
+    (dest / "2026-03" / a.name).write_bytes(b"old")
+    capsys.readouterr()
+    assert helper.cmd_library_move(str(dest), "1") == 0
+    new = json.loads(capsys.readouterr().out)["moved"][0][1]
+    assert new.endswith("_2.png")
+    assert helper.NAME_PATTERN.match(new.rsplit("/", 1)[1])
+    assert (dest / "2026-03" / a.name).read_bytes() == b"old"
+
+
+def test_library_move_refuses_inside_old_library(helper, library):
+    before = helper.SETTINGS_FILE.read_text(encoding="utf-8")
+    assert helper.cmd_library_move(str(library / "sub"), "1") == 1
+    assert not (library / "sub").exists()
+    assert helper.SETTINGS_FILE.read_text(encoding="utf-8") == before
+
+
+def test_library_move_refuses_relative_path(helper, library):
+    assert helper.cmd_library_move("relative/dir", "1") == 1

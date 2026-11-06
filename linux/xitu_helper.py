@@ -26,6 +26,11 @@
   theme-list             每行「id 显示名」
   theme-set <id>         把 settings.json 的 Theme 写成这个 id（保留其他字段），并输出主题 JSON
   theme-next             切到列表里的下一个主题，并输出主题 JSON
+  settings-get           设置窗口用：一行 JSON，当前图库位置、保存时间、Collect、主题和各自的可选项，图库张数和占用
+  settings-set <键> <值> 改 RetentionDays（7/30/90/365/0）或 Collect（all/screenshots/own），其他字段保留
+  library-move <目录> <0|1>  换图库位置；1 时把系图自己的文件搬过去（同 Library.ChangeRoot），
+                         输出一行 JSON：root、moved（[旧, 新] 路径对）
+  pick-folder [起点]     用 zenity / kdialog 选文件夹，输出路径；取消时不输出，两个都没有时退出码 3
 
 图库规则与 Windows 版一致（Library.cs）：根目录下 yyyy-MM 和「收藏」两种子文件夹，
 文件名「来源_yyyyMMdd_HHmmss[_n].png」。只认这种文件，别的一概不碰。
@@ -1023,6 +1028,143 @@ def cmd_theme_next():
     return cmd_theme_set(nxt)
 
 
+# ---- 设置窗口（同 Windows SettingsWindow.cs）----
+
+RETENTION_OPTIONS = ((7, "7 天"), (30, "30 天"), (90, "90 天"), (365, "1 年"), (0, "永久"))
+COLLECT_OPTIONS = (
+    ("all", "截图和复制的图片"),
+    ("screenshots", "只要截图"),
+    ("own", "只要系图自己截的图"),
+)
+
+
+def cmd_settings_get():
+    """设置窗口打开时读一次：当前值、可选项、图库占用和张数。"""
+    settings = load_settings()
+    root = library_root()
+    count, total = 0, 0
+    for f in owned_files(root):
+        try:
+            total += f.stat().st_size
+            count += 1
+        except OSError:
+            pass
+    days = retention_days(settings)
+    json.dump({
+        "libraryPath": str(root),
+        "defaultLibraryPath": str(pictures_dir() / "系图"),
+        "retentionDays": days if days in [d for d, _ in RETENTION_OPTIONS] else 30,
+        "retentionOptions": [{"days": d, "label": label} for d, label in RETENTION_OPTIONS],
+        "collect": collect_mode(settings),
+        "collectOptions": [{"value": v, "label": label} for v, label in COLLECT_OPTIONS],
+        "theme": current_theme_id(),
+        "themes": [{"id": tid, "name": name} for tid, name in list_themes()],
+        "count": count,
+        "occupied": total,
+    }, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
+    return 0
+
+
+def cmd_settings_set(key, value):
+    """只改设置窗口管的两项，其他字段原样保留。值不合法就拒绝，不写文件。"""
+    if key == "RetentionDays":
+        try:
+            parsed = int(value)
+        except ValueError:
+            parsed = None
+        if parsed not in [d for d, _ in RETENTION_OPTIONS]:
+            print(f"RetentionDays 只能是 {', '.join(str(d) for d, _ in RETENTION_OPTIONS)}", file=sys.stderr)
+            return 1
+    elif key == "Collect":
+        if value not in COLLECT_MODES:
+            print(f"Collect 只能是 {', '.join(COLLECT_MODES)}", file=sys.stderr)
+            return 1
+        parsed = value
+    else:
+        print(f"settings-set 不管 {key}", file=sys.stderr)
+        return 1
+    settings = read_settings_obj()
+    settings[key] = parsed
+    save_settings(settings)
+    log(f"设置 {key} = {parsed}")
+    print(parsed)
+    return 0
+
+
+def _same_dir(a, b):
+    try:
+        return a.resolve() == b.resolve()
+    except OSError:
+        return False
+
+
+def cmd_library_move(dest, move):
+    """换图库位置（同 Library.ChangeRoot）。move 为 1 时把系图自己的文件按原来的子文件夹搬过去，
+    重名另起 _n。别的文件不碰。输出一行 JSON：root 和 moved（[旧路径, 新路径] 列表），绳上路径按它改。"""
+    if move not in ("0", "1"):
+        print("library-move 的第二个参数是 0 或 1", file=sys.stderr)
+        return 1
+    target = Path(dest).expanduser()
+    if not target.is_absolute():
+        print("图库位置要写绝对路径", file=sys.stderr)
+        return 1
+    import shutil
+
+    def go():
+        old_root = library_root()
+        if old_root.is_dir() and old_root.resolve() in target.resolve().parents:
+            print("新位置不能放在原图库里面", file=sys.stderr)
+            return 1
+        target.mkdir(parents=True, exist_ok=True)
+        (target / FAVORITES).mkdir(exist_ok=True)
+        new_root = target.resolve()
+        moved = []
+        if move == "1" and old_root.is_dir() and not _same_dir(old_root, new_root):
+            for f in list(owned_files(old_root)):
+                parsed = _stamp_of(f.name)
+                if not parsed:
+                    continue
+                when, label = parsed
+                dest_dir = new_root / f.parent.name
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                out = dest_dir / f.name
+                if out.exists():
+                    out = unique_named(dest_dir, label, when)
+                src = str(f.resolve())
+                shutil.move(str(f), str(out))
+                moved.append([src, str(out.resolve())])
+        settings = read_settings_obj()
+        settings["LibraryPath"] = str(new_root)
+        save_settings(settings)
+        try:
+            HASH_CACHE.unlink()
+        except FileNotFoundError:
+            pass
+        log(f"图库位置 {new_root}，搬了 {len(moved)} 张")
+        json.dump({"root": str(new_root), "moved": moved}, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
+        return 0
+
+    return _with_import_lock(go)
+
+
+def cmd_pick_folder(start):
+    """有 zenity 或 kdialog 就弹系统的选文件夹对话框，输出选中的路径；取消或都没有时什么也不输出。"""
+    import shutil
+    if shutil.which("zenity"):
+        cmd = ["zenity", "--file-selection", "--directory", "--title=选择图库位置", f"--filename={start}/"]
+    elif shutil.which("kdialog"):
+        cmd = ["kdialog", "--getexistingdirectory", start, "--title", "选择图库位置"]
+    else:
+        print("没有 zenity 或 kdialog，直接在框里输入路径", file=sys.stderr)
+        return 3
+    out = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+    if out:
+        print(out)
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__, file=sys.stderr)
@@ -1073,6 +1215,14 @@ def main(argv):
             return cmd_theme_set(args[0] if args else "")
         if cmd == "theme-next":
             return cmd_theme_next()
+        if cmd == "settings-get":
+            return cmd_settings_get()
+        if cmd == "settings-set":
+            return cmd_settings_set(args[0], args[1])
+        if cmd == "library-move":
+            return cmd_library_move(args[0], args[1] if len(args) > 1 else "")
+        if cmd == "pick-folder":
+            return cmd_pick_folder(args[0] if args else str(HOME))
     except Exception as e:  # 记日志，别让 QML 那边卡住
         log(f"{cmd} 失败：{e!r}")
         print(f"{cmd} 失败：{e}", file=sys.stderr)
