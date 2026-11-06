@@ -19,7 +19,9 @@ Item {
     // 相框上沿在绳子下方多少。沿用原来的 PinAbove / PinHeight，红绳才和改主题之前重合。
     readonly property real frameDrop: L.PinHeight - 12 - L.PinAbove
     readonly property real frameTop: theme.clipAbove + frameDrop
-    readonly property url fileUrl: "file://" + path
+    // 编辑保存后 rev 加一，换个地址让 Image 重新读文件（本地文件的 ? 后面不影响读哪个文件）
+    readonly property int rev: host.shell.thumbRev(path)
+    readonly property url fileUrl: "file://" + path + (rev > 0 ? "?v=" + rev : "")
     // 收藏的文件在图库根下的「收藏」文件夹里（Library.IsFavorite）
     readonly property bool favorite: {
         var parts = path.split("/");
@@ -326,6 +328,7 @@ Item {
             property point pressAt
             property bool moved: false
             property real lastClick: 0
+            property bool held: false
 
             onPressed: mouse => {
                 if (mouse.button === Qt.RightButton) {
@@ -334,11 +337,13 @@ Item {
                 }
                 pressAt = Qt.point(mouse.x, mouse.y);
                 moved = false;
+                held = false;
                 card.pressed = true;
+                holdTimer.restart();
             }
 
             onPositionChanged: mouse => {
-                if (!pressed || card.dragging) return;
+                if (!pressed || card.dragging || held) return;
                 var dx = mouse.x - pressAt.x;
                 var dy = mouse.y - pressAt.y;
                 if (!moved && Math.hypot(dx, dy) < 6) return;
@@ -346,6 +351,7 @@ Item {
                     moved = true;
                     card.pressed = false;
                     clickTimer.stop();
+                    holdTimer.stop();
                     // 一开始就往下拖：拖出一份给别的程序；横着拖：沿绳换位置
                     if (dy > 12 && Math.abs(dy) > Math.abs(dx)) {
                         card.startExternalDrag();
@@ -371,6 +377,8 @@ Item {
 
             onReleased: {
                 card.pressed = false;
+                holdTimer.stop();
+                if (held) { held = false; return; }   // 长按已经打开编辑器，不再算单击
                 if (card.lifted) {
                     card.lifted = false;
                     card.host.endMove(true);
@@ -391,7 +399,21 @@ Item {
 
             onCanceled: {
                 card.pressed = false;
+                holdTimer.stop();
+                held = false;
                 if (card.lifted) { card.lifted = false; card.host.endMove(false); }
+            }
+        }
+
+        // 长按编辑，同 Windows Layout.HoldToEdit
+        Timer {
+            id: holdTimer
+            interval: L.HoldToEdit
+            onTriggered: {
+                hitArea.held = true;
+                card.pressed = false;
+                clickTimer.stop();
+                card.host.editFile(card.path);
             }
         }
 
@@ -489,6 +511,7 @@ Item {
         Native.MenuSeparator {}
         Native.MenuItem { text: "复制"; onTriggered: card.host.copyFile(card.path) }
         Native.MenuItem { text: "打开"; onTriggered: card.host.openFile(card.path) }
+        Native.MenuItem { text: "编辑"; onTriggered: card.host.editFile(card.path) }
         Native.MenuItem {
             text: card.favorite ? "取消收藏" : "收藏"
             onTriggered: card.host.setFavorite(card.path, !card.favorite)

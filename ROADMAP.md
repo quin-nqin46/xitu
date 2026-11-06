@@ -14,7 +14,7 @@
 
 待做：
 
-- Linux 编辑：`$XITU_EDITOR`，没有就用 satty / swappy，再没有就用 xdg-open；编辑完刷新卡片
+- ~~Linux 编辑~~（进行中）
 - Linux 自带截图：grim + slurp，对应 Windows 的 Ctrl+Shift+A；没装就退回系统截图工具
 - 修顶部误触发：只在画出来的绳子上停留才展开，不再是整条顶边
 - 卡片右键「另存为」，两边一起做
