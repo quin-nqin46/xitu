@@ -133,7 +133,7 @@ jobs:
           path: ui-shots/
           retention-days: 14
 
-  # Sway 之外的桌面：niri（嵌在无头 Sway 里）和 KDE 的 KWin（--virtual 无头）
+  # Sway 之外的桌面：niri、Hyprland（嵌在无头 Sway 里）和 KDE 的 KWin（--virtual 无头）
   linux-desktops:
     name: Linux UI (${{ matrix.desktop }})
     runs-on: ubuntu-latest
@@ -142,12 +142,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        desktop: [niri, kwin]
+        desktop: [niri, kwin, hyprland]
     steps:
       - name: Install packages
         run: |
           common="quickshell foot wl-clipboard inotify-tools python python-pillow wqy-microhei ttf-dejavu mesa adwaita-cursors libcap grim"
-          if [ "${{ matrix.desktop }}" = niri ]; then extra="niri sway swaybg"; else extra="kwin dbus"; fi
+          case "${{ matrix.desktop }}" in
+            niri) extra="niri sway swaybg" ;;
+            hyprland) extra="hyprland sway swaybg" ;;
+            *) extra="kwin dbus" ;;
+          esac
           pacman -Syu --noconfirm --needed $common $extra
           # 同 linux-ui：Arch 的 sway / kwin 带文件能力，容器里 exec 会被拒
           setcap -r /usr/bin/sway 2>/dev/null || true
