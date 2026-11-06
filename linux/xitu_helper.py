@@ -3,7 +3,7 @@
 
 子命令（每行输出一个结果，出错写 stderr、退出码非 0）：
   import <文件> <来源>   复制进图库（来源：截图/剪贴板/拖入/文件/其他），输出图库里的路径；内容相同的直接返回已有那张
-  auto-import <文件>     截图文件夹来的新文件：按设置 Collect 决定收不收（own 时不收），收就同 import <文件> 截图
+  auto-import <文件>     截图文件夹来的新文件：按设置 Collect 决定收不收（own 时不收）、「图片」根目录里文件名不像截图的不收，收就同 import <文件> 截图
   import-b64 <来源>      从 stdin 读 base64 的图像字节，进图库（拖放里直接带的 image/*）
   fetch <url>            下载一张 http(s) 图片（超时 15 秒、上限 30 MB、只要 Content-Type image/*），
                          存临时文件后走 import，来源「拖入」。不跟随到非 http(s)
@@ -20,8 +20,10 @@
   sweep [绳上路径]...    过期清理（同 Windows Retention.cs）：超过 RetentionDays、没收藏、不在绳上的进回收站，
                          输出清理张数。RetentionDays 为 0（永久）时什么也不做
   reveal <路径>          在文件管理器中显示。只对 IsOwned 生效
-  screenshot-dir         输出要盯的截图文件夹：$XITU_SCREENSHOT_DIR，否则「图片」目录下已有的
-                         Screenshots 或 屏幕截图，都没有就用 Screenshots
+  screenshot-dir         每行一个要盯的截图文件夹（只列已存在的，不建）：$XITU_SCREENSHOT_DIR；否则
+                         XDG_SCREENSHOTS_DIR；否则「图片」下的 Screenshots / 屏幕截图 和「图片」根目录
+  watch-shots            exec 成 inotifywait 盯上面这些文件夹，每个新文件一行路径
+  check-deps [--notify]  列出缺的依赖；--notify 时缺必需的就弹一次通知
   theme-current          输出当前主题（缺字段已补上）的一行 JSON
   theme-list             每行「id 显示名」
   theme-set <id>         把 settings.json 的 Theme 写成这个 id（保留其他字段），并输出主题 JSON
@@ -97,15 +99,59 @@ def pictures_dir():
     return HOME / "Pictures"
 
 
-def screenshot_dir():
-    env = os.environ.get("XITU_SCREENSHOT_DIR", "").strip()
+def _xdg_screenshots_dir():
+    """XDG_SCREENSHOTS_DIR：环境变量，或 user-dirs.dirs 里的 XDG_SCREENSHOTS_DIR（xdg-user-dir 取）。"""
+    env = os.environ.get("XDG_SCREENSHOTS_DIR", "").strip()
     if env:
         return Path(env).expanduser()
+    try:
+        out = subprocess.run(["xdg-user-dir", "SCREENSHOTS"], capture_output=True, text=True, timeout=3).stdout.strip()
+        if out and out != str(HOME):
+            return Path(out)
+    except Exception:
+        pass
+    return None
+
+
+def screenshot_dirs():
+    """要盯的截图文件夹，[(文件夹, 只认像截图的文件名)]。不建文件夹：只返回已经存在的。
+
+    设了 $XITU_SCREENSHOT_DIR 就只盯它；否则 XDG_SCREENSHOTS_DIR（grimblast 等用它）；
+    都没有时盯「图片」下的 Screenshots / 屏幕截图，再加「图片」根目录本身——grim、grimblast、hyprshot
+    没配置时都存在那里。根目录里别的图也很多，只收文件名像截图的（见 SHOT_NAME）。"""
+    env = os.environ.get("XITU_SCREENSHOT_DIR", "").strip()
+    if env:
+        d = Path(env).expanduser()
+        return [(d, False)] if d.is_dir() else []
+    xdg = _xdg_screenshots_dir()
+    if xdg is not None and xdg.is_dir():
+        return [(xdg, False)]
     pics = pictures_dir()
-    for name in ("Screenshots", "屏幕截图"):
-        if (pics / name).is_dir():
-            return pics / name
-    return pics / "Screenshots"
+    found = [(pics / name, False) for name in ("Screenshots", "屏幕截图") if (pics / name).is_dir()]
+    if pics.is_dir():
+        found.append((pics, True))
+    return found
+
+
+# 「图片」根目录里认作截图的文件名：grim 的 20261106_07h47m35s_grim.png、hyprshot 的
+# 2026-11-06-074735_hyprshot.png、grimblast 的 2026-11-06T07:47:35+08:00.png、各种 Screenshot*.png
+SHOT_NAME = re.compile(r"(grim|hyprshot|screenshot|screen[ _-]?shot|截图|屏幕截图|^\d{4}-?\d{2}-?\d{2}[T_ -]?\d{2})", re.I)
+
+
+def is_screenshot_file(path):
+    """新文件算不算截图：在专门的截图文件夹里就算；在「图片」根目录里要文件名像截图。"""
+    path = Path(path)
+    parent = path.parent.resolve()
+    for d, by_name in screenshot_dirs():
+        if parent == d.resolve():
+            return bool(SHOT_NAME.search(path.name)) if by_name else True
+    return False
+
+
+def screenshot_dir():
+    """第一个截图文件夹（兼容旧调用）；一个都没有时是「图片」/Screenshots，不建。"""
+    dirs = screenshot_dirs()
+    return dirs[0][0] if dirs else pictures_dir() / "Screenshots"
 
 
 def library_root():
@@ -366,6 +412,8 @@ def cmd_auto_import(path):
     """截图文件夹里的新文件。Collect 为 own 时不收，什么也不输出。"""
     if collect_mode(load_settings()) == "own":
         return 0
+    if not is_screenshot_file(path):
+        return 0
     return cmd_import(path, "截图")
 
 
@@ -475,14 +523,14 @@ def cmd_clip():
     # 截图键会同时写文件夹和剪贴板；剪贴板这路先到时，按截图记，免得来源标成「剪贴板」
     label = "剪贴板"
     digest = sha256_bytes(data)
-    shots = screenshot_dir()
-    try:
-        for f in shots.iterdir():
-            if f.suffix.lower() == ".png" and time.time() - f.stat().st_mtime < 5 and sha256_bytes(f.read_bytes()) == digest:
+    for shots, _ in screenshot_dirs():
+        try:
+            if any(f.suffix.lower() == ".png" and time.time() - f.stat().st_mtime < 5
+                   and sha256_bytes(f.read_bytes()) == digest for f in shots.iterdir()):
                 label = "截图"
                 break
-    except OSError:
-        pass
+        except OSError:
+            pass
     return _emit_imported(import_bytes(data, label))
 
 
@@ -524,12 +572,93 @@ def cmd_save_state(paths):
     return 0
 
 
-def cmd_run(args):
+def _libc():
+    """能调 prctl 的 libc。glibc 和 musl 都行：先看进程里已经载入的，再按名字找。"""
     import ctypes
+    import ctypes.util
+    for name in (None, ctypes.util.find_library("c"), "libc.so.6", "libc.so"):
+        try:
+            lib = ctypes.CDLL(name, use_errno=True)
+            lib.prctl  # 没有这个符号会抛 AttributeError
+            return lib
+        except (OSError, AttributeError, TypeError):
+            continue
+    return None
+
+
+def cmd_run(args):
+    """设好「父进程退出就跟着退出」再 exec。命令不存在时记日志、等 5 分钟再退出：
+    界面那边退出 5 秒就重启监听，没装 wl-paste 时别一直刷（缺依赖由 check-deps 弹通知）。"""
+    import shutil
     import signal
+    if not shutil.which(args[0]):
+        log(f"没有 {args[0]}，5 分钟后再试")
+        time.sleep(300)
+        return 127
     PR_SET_PDEATHSIG = 1
-    ctypes.CDLL("libc.so.6", use_errno=True).prctl(PR_SET_PDEATHSIG, signal.SIGTERM)
+    libc = _libc()
+    if libc is not None:
+        libc.prctl(PR_SET_PDEATHSIG, signal.SIGTERM)
+    else:
+        log("找不到 libc 的 prctl，父进程退出时监听进程不会跟着退出")
     os.execvp(args[0], args)
+
+
+def cmd_watch_shots():
+    """盯截图文件夹，每个新文件输出一行完整路径（交给 auto-import 判断）。exec 成 inotifywait。
+    一个文件夹都没有、或没装 inotifywait 时记日志后等 5 分钟再退出，免得界面那边每 5 秒重启一次。"""
+    import shutil
+    dirs = [str(d) for d, _ in screenshot_dirs()]
+    if not dirs:
+        log("没有可盯的截图文件夹（可设 XITU_SCREENSHOT_DIR），5 分钟后再看")
+    elif not shutil.which("inotifywait"):
+        log("没装 inotifywait（inotify-tools），截图文件夹不会自动挂上")
+    else:
+        os.execvp("inotifywait", ["inotifywait", "-m", "-q", "-e", "close_write,moved_to", "--format", "%w%f"] + dirs)
+    time.sleep(300)
+    return 0
+
+
+# 启动时查一遍。(命令, 用途, 是否必需)。必需的缺了会弹一次通知。
+DEPENDENCIES = (
+    ("wl-paste", "剪贴板里的截图自动挂上（wl-clipboard）", True),
+    ("wl-copy", "单击复制（wl-clipboard）", True),
+    ("inotifywait", "截图文件夹自动挂上、编辑后刷新（inotify-tools）", True),
+    ("xdg-open", "双击打开、打开图库（xdg-utils）", True),
+    ("gio", "删除进回收站（glib2）", True),
+    ("grim", "自带截图 Ctrl+Shift+A", False),
+    ("slurp", "自带截图框选", False),
+    ("xdg-user-dir", "找「图片」文件夹（xdg-user-dirs）", False),
+)
+
+
+def missing_dependencies(which=None):
+    """[(命令, 用途, 是否必需)]，缺的那些。Pillow 也算一项。"""
+    import shutil
+    which = which or shutil.which
+    missing = [d for d in DEPENDENCIES if not which(d[0])]
+    try:
+        import PIL  # noqa: F401
+    except ImportError:
+        missing.insert(0, ("Pillow", "读写图片（python3-pillow）", True))
+    return missing
+
+
+def cmd_check_deps(notify=False):
+    """输出缺的依赖，每行「命令\t必需|可选\t用途」。notify 时必需的缺了就 notify-send 一次。退出码：缺必需的为 1。"""
+    import shutil
+    missing = missing_dependencies()
+    for name, use, required in missing:
+        print(f"{name}\t{'必需' if required else '可选'}\t{use}")
+    needed = [m for m in missing if m[2]]
+    if needed:
+        msg = "缺少 " + "、".join(m[0] for m in needed) + "，" + "；".join(m[1] for m in needed) + " 用不了。运行 install.sh --check 看安装命令。"
+        log(msg)
+        if notify and shutil.which("notify-send"):
+            subprocess.Popen(["notify-send", "-a", "系图", "-u", "critical", "系图缺少依赖", msg],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return 1
+    return 0
 
 
 def load_settings():
@@ -565,8 +694,11 @@ def _key_name(vk):
     }.get(vk, "VK" + format(vk, "X"))
 
 
+DEFAULT_CAPTURE_LABEL = "Ctrl+Shift+A"
+
+
 def capture_label(settings):
-    """空状态那行字。没设过或设了不能注册的键时，Linux 上显示系统截图键 Super+Shift+S。"""
+    """空状态那行字。没设过或设了不能注册的键时显示 Ctrl+Shift+A：同 Windows 默认，也是 install.sh 写进 Hyprland 的绑定。"""
     try:
         mods = int(settings.get("CaptureModifiers") or 0)
         key = int(settings.get("CaptureKey") or 0)
@@ -574,7 +706,7 @@ def capture_label(settings):
         mods, key = 0, 0
     modifiers = (0x10, 0x11, 0x12, 0x5B, 0x5C, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5)
     if key == 0 or key in modifiers or (key != 0x2C and mods == 0):
-        return "Super+Shift+S"
+        return DEFAULT_CAPTURE_LABEL
     parts = []
     if mods & 0x0002:
         parts.append("Ctrl")
@@ -1378,8 +1510,13 @@ def main(argv):
         if cmd == "run":
             return cmd_run(args)
         if cmd == "screenshot-dir":
-            print(screenshot_dir())
+            for d, _ in screenshot_dirs():
+                print(d)
             return 0
+        if cmd == "watch-shots":
+            return cmd_watch_shots()
+        if cmd == "check-deps":
+            return cmd_check_deps(notify="--notify" in args)
         if cmd == "library-root":
             print(library_root())
             return 0
