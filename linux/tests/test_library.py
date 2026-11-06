@@ -508,3 +508,73 @@ def test_edit_launches_editor(helper, library, monkeypatch, capsys):
     assert helper.cmd_edit(str(a)) == 0
     assert launched == [["myedit", str(a.resolve())]]
     assert capsys.readouterr().out.strip() == "myedit"
+
+
+# ---- 自带截图 ----
+
+def test_window_boxes_only_visible_workspaces(helper):
+    monitors = [{"activeWorkspace": {"id": 1}, "specialWorkspace": {"id": 0}},
+                {"activeWorkspace": {"id": 4}, "specialWorkspace": {"id": -98}}]
+    clients = [
+        {"at": [10, 20], "size": [300, 200], "workspace": {"id": 1}, "title": "终端  窗口"},
+        {"at": [0, 0], "size": [100, 100], "workspace": {"id": 2}, "title": "看不见"},
+        {"at": [1920, 0], "size": [800, 600], "workspace": {"id": 4}, "class": "firefox"},
+        {"at": [5, 5], "size": [50, 50], "workspace": {"id": -98}, "title": "special"},
+        {"at": [1, 1], "size": [9, 9], "workspace": {"id": 1}, "hidden": True},
+        {"at": [1, 1], "size": [0, 9], "workspace": {"id": 1}},
+    ]
+    assert helper.window_boxes(clients, monitors) == [
+        "10,20 300x200 终端 窗口",
+        "1920,0 800x600 firefox",
+        "5,5 50x50 special",
+    ]
+
+
+def _fake_run(helper, monkeypatch, slurp_out, slurp_code=0, png=None):
+    calls = []
+
+    def run(cmd, **kw):
+        calls.append(cmd)
+        if cmd[0] == "hyprctl":
+            return SimpleNamespace(returncode=0, stdout="[]")
+        if cmd[0] == "slurp":
+            return SimpleNamespace(returncode=slurp_code, stdout=slurp_out)
+        if cmd[0] == "grim":
+            return SimpleNamespace(returncode=0, stdout=png, stderr=b"")
+        raise AssertionError(cmd)
+
+    monkeypatch.setattr(helper.subprocess, "run", run)
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/" + name)
+    return calls
+
+
+def test_capture_imports_and_copies(helper, library, monkeypatch, capsys):
+    calls = _fake_run(helper, monkeypatch, "10,20 30x40\n", png=make_image(color=(3, 3, 3)))
+    copied = []
+    monkeypatch.setattr(helper, "cmd_copy", lambda p: copied.append(p))
+    assert helper.cmd_capture() == 0
+    out = capsys.readouterr().out.strip()
+    assert out.startswith(str(library.resolve())) and "/截图_" in out
+    assert ["grim", "-g", "10,20 30x40", "-"] in calls
+    assert copied == [out]
+
+
+def test_capture_respects_copy_setting(helper, library, monkeypatch, capsys):
+    helper.SETTINGS_FILE.write_text(json.dumps({"LibraryPath": str(library), "CopyToClipboard": False}), encoding="utf-8")
+    _fake_run(helper, monkeypatch, "0,0 5x5\n", png=make_image(color=(4, 4, 4)))
+    copied = []
+    monkeypatch.setattr(helper, "cmd_copy", lambda p: copied.append(p))
+    assert helper.cmd_capture() == 0
+    assert copied == []
+
+
+def test_capture_cancelled(helper, library, monkeypatch, capsys):
+    calls = _fake_run(helper, monkeypatch, "", slurp_code=1)
+    assert helper.cmd_capture() == 0
+    assert capsys.readouterr().out == ""
+    assert not any(c[0] == "grim" for c in calls)
+
+
+def test_capture_without_tools(helper, library, monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda name: None if name == "slurp" else "/usr/bin/" + name)
+    assert helper.cmd_capture() == 3

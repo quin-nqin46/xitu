@@ -26,6 +26,8 @@
   theme-list             每行「id 显示名」
   theme-set <id>         把 settings.json 的 Theme 写成这个 id（保留其他字段），并输出主题 JSON
   theme-next             切到列表里的下一个主题，并输出主题 JSON
+  capture                自带截图：slurp 框选（拖一块、点窗口、点屏幕），grim 截下进图库，输出路径；
+                         CopyToClipboard 开着（默认）就同时复制。取消时不输出；没装 grim / slurp 时退出码 3
   edit <路径>            用编辑器打开系图自己的文件：$XITU_EDITOR，否则 satty / swappy（存回原文件），否则 xdg-open。
                          输出编辑器名字，不等编辑器退出
   settings-get           设置窗口用：一行 JSON，当前图库位置、保存时间、Collect、主题和各自的可选项，图库张数和占用
@@ -1212,6 +1214,78 @@ def cmd_edit(path):
     return 0
 
 
+# ---- 自带截图（同 Windows Ctrl+Shift+A）：slurp 框选，grim 截 ----
+
+def window_boxes(clients, monitors):
+    """slurp 的预设框：当前各屏可见工作区上的窗口，每行「x,y wxh 标题」。点一下窗口就截这个窗口。"""
+    active = set()
+    for m in monitors or []:
+        ws = (m.get("activeWorkspace") or {}).get("id")
+        if ws is not None:
+            active.add(ws)
+        special = (m.get("specialWorkspace") or {}).get("id")
+        if special:
+            active.add(special)
+    lines = []
+    for c in clients or []:
+        if not c.get("mapped", True) or c.get("hidden"):
+            continue
+        if (c.get("workspace") or {}).get("id") not in active:
+            continue
+        at, size = c.get("at") or [0, 0], c.get("size") or [0, 0]
+        if size[0] <= 0 or size[1] <= 0:
+            continue
+        title = " ".join(str(c.get("title") or c.get("class") or "").split())
+        lines.append(f"{int(at[0])},{int(at[1])} {int(size[0])}x{int(size[1])} {title}".rstrip())
+    return lines
+
+
+def _hypr_json(what):
+    try:
+        out = subprocess.run(["hyprctl", "-j", what], capture_output=True, text=True, timeout=3)
+        return json.loads(out.stdout) if out.returncode == 0 else []
+    except Exception:
+        return []
+
+
+def copy_to_clipboard_enabled(settings):
+    """设置 CopyToClipboard，默认开（同 Windows Settings.cs）。"""
+    v = settings.get("CopyToClipboard")
+    return True if v is None else bool(v)
+
+
+def cmd_capture():
+    """框选（拖一块、点一个窗口，或点 / 按 Enter 选整块屏）后截图进图库，输出路径；取消时不输出。
+    没装 grim 或 slurp 时退出码 3，由界面提示改用系统截图键。"""
+    import shutil
+    missing = [t for t in ("grim", "slurp") if not shutil.which(t)]
+    if missing:
+        print("没装 " + " / ".join(missing) + "，先用系统截图键；截到截图文件夹的图会自动挂上", file=sys.stderr)
+        return 3
+    boxes = window_boxes(_hypr_json("clients"), _hypr_json("monitors")) if shutil.which("hyprctl") else []
+    sel = subprocess.run(["slurp", "-o", "-d"], input="\n".join(boxes) + "\n", capture_output=True, text=True)
+    geom = sel.stdout.strip()
+    if sel.returncode != 0 or not geom:
+        log("截图已取消")
+        return 0
+    shot = subprocess.run(["grim", "-g", geom, "-"], capture_output=True)
+    if shot.returncode != 0 or not shot.stdout:
+        print("grim 截图失败：" + shot.stderr.decode(errors="replace").strip(), file=sys.stderr)
+        return 1
+    dest = import_bytes(shot.stdout, "截图")
+    if dest is None:
+        print("截到的图解不开", file=sys.stderr)
+        return 1
+    log(f"截图 {geom} {dest}")
+    if copy_to_clipboard_enabled(load_settings()):
+        try:
+            cmd_copy(str(dest))
+        except Exception as e:
+            log(f"截图复制失败：{e}")
+    print(Path(dest).resolve())
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__, file=sys.stderr)
@@ -1262,6 +1336,8 @@ def main(argv):
             return cmd_theme_set(args[0] if args else "")
         if cmd == "theme-next":
             return cmd_theme_next()
+        if cmd == "capture":
+            return cmd_capture()
         if cmd == "edit":
             return cmd_edit(args[0])
         if cmd == "settings-get":
