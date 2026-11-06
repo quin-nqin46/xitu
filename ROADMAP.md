@@ -21,10 +21,15 @@ v0.1 的项目都做完了。
 
 ## v0.2 第一次正式发布
 
-- 正式下载包（GitHub Releases）
-- Windows 不用另装 .NET
-- Linux 安装脚本，缺依赖时提醒
-- 修人人会踩的小问题：字体写死、截图文件夹猜错、musl 系统上的兼容
+已完成：
+
+- 正式下载包：推 `v*` 标签就由 `release.yml` 打包、冒烟测试并发 GitHub Release
+- Windows 单文件自带 .NET 运行时，不用另装
+- Linux 安装脚本 `linux/install.sh`：检查依赖并按发行版给出安装命令，装 `xitu` 命令，写 Hyprland 自启和 Ctrl+Shift+A；运行时缺必需的包会弹通知
+- 小问题：界面字体按已装的挑（不再写死 HarmonyOS Sans SC）；截图文件夹认 `XDG_SCREENSHOTS_DIR` 和「图片」根目录（grim / grimblast / hyprshot 的默认位置），不再替用户建空文件夹；musl 上找得到 libc；图库空白页提示的截图键改成 Ctrl+Shift+A
+- README 两个平台的下载与安装步骤
+
+剩下：打 `v0.2.0` 标签发第一个版本。
 
 ## v0.3 Linux 跨桌面
 

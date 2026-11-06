@@ -1,0 +1,162 @@
+name: Release
+
+# 推一个 v* 标签（例如 git tag v0.2.0 && git push origin v0.2.0）就打包并发一个 GitHub Release：
+#   Xitu-<版本>-win-x64.zip   Windows 单文件，自带 .NET 运行时，不用另装
+#   xitu-<版本>-linux.tar.gz  Linux 绳子版 + install.sh
+# 改到打包相关文件的 PR 也会跑一遍打包和冒烟测试，只是不发 Release。
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "linux/install.sh"
+      - "linux/*.qml"
+      - "linux/*.js"
+      - "linux/xitu_helper.py"
+      - "windows/Clothesline.csproj"
+      - "windows/App.xaml.cs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            v="${GITHUB_REF_NAME#v}"
+          else
+            v="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' windows/Clothesline.csproj)-dev.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "版本 $v"
+
+  windows:
+    name: Windows package (self-contained)
+    needs: version
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # 自带运行时的单文件：用户不用另装 .NET。WPF 的原生库也打进去，解压到临时目录运行
+      - name: Publish
+        shell: pwsh
+        run: |
+          $num = ($env:VERSION -split '-')[0]
+          dotnet publish windows/Clothesline.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
+            -p:Version=$env:VERSION -p:AssemblyVersion=$num.0 -p:FileVersion=$num.0 -o publish
+          Get-ChildItem publish | Format-Table Name, Length
+
+      # 冒烟：发布出来的 exe 真能起来（画主题预览后自己退出），日志里没有 ERROR
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath publish/Xitu.exe -ArgumentList "--render-themes", "$PWD/smoke" -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Error "启动超时" }
+          Get-Content "$env:LOCALAPPDATA/Xitu/log.txt" -ErrorAction SilentlyContinue
+          if ((Get-ChildItem smoke -Filter *.png -ErrorAction SilentlyContinue).Count -eq 0) { Write-Error "发布版没跑起来" }
+          if (Select-String -Path "$env:LOCALAPPDATA/Xitu/log.txt" -Pattern " ERROR " -Quiet) { Write-Error "运行日志里有 ERROR" }
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $stage = "stage/Xitu"
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item publish/Xitu.exe, LICENSE, NOTICE $stage
+          Compress-Archive -Path "$stage/*" -DestinationPath "dist/Xitu-$env:VERSION-win-x64.zip"
+          Get-ChildItem dist | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist/*
+          retention-days: 14
+
+  linux:
+    name: Linux package
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack
+        run: |
+          name="xitu-${VERSION}"
+          mkdir -p "stage/$name/linux" "stage/$name/shared" dist
+          cp linux/*.qml linux/*.js linux/xitu_helper.py linux/install.sh "stage/$name/linux/"
+          cp -R shared/themes "stage/$name/shared/"
+          cp LICENSE NOTICE README.md README.zh-CN.md "stage/$name/"
+          echo "$VERSION" > "stage/$name/VERSION"
+          tar -C stage -czf "dist/$name-linux.tar.gz" "$name"
+          tar -tzf "dist/$name-linux.tar.gz"
+
+      # 冒烟：解压后按 README 的步骤装进一个空的 HOME，装好的助手能跑、能找到内置主题
+      - name: Smoke test install.sh
+        run: |
+          sudo apt-get install -y -q python3-pil >/dev/null
+          work=$(mktemp -d)
+          tar -C "$work" -xzf "dist/xitu-${VERSION}-linux.tar.gz"
+          export HOME="$work/home"
+          # 跑器上设了 XDG_CONFIG_HOME 等，指向真实 HOME；清掉才是一个全新用户
+          unset XDG_CONFIG_HOME XDG_DATA_HOME
+          mkdir -p "$HOME/.config/hypr" && echo "# test" > "$HOME/.config/hypr/hyprland.conf"
+          cd "$work/xitu-${VERSION}"
+          sh linux/install.sh --check || true
+          sh linux/install.sh --yes
+          app="$HOME/.local/share/Xitu/app"
+          test -x "$HOME/.local/bin/xitu"
+          grep -q "xitu start" "$HOME/.config/hypr/xitu.conf"
+          grep -q "source = $HOME/.config/hypr/xitu.conf" "$HOME/.config/hypr/hyprland.conf"
+          python3 "$app/linux/xitu_helper.py" theme-list | grep -q polaroid-blue
+          python3 "$app/linux/xitu_helper.py" check-deps || true
+          sh linux/install.sh --uninstall
+          test ! -e "$app"
+          if grep -q xitu.conf "$HOME/.config/hypr/hyprland.conf"; then echo "卸载没去掉 source 行"; exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: dist/*
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    if: github.ref_type == 'tag'
+    needs: [version, windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: 系图 ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

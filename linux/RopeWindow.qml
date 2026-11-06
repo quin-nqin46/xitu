@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "layout.js" as L
+import "fonts.js" as F
 
 // 一块屏上的绳子（LineWindow.cs + LineView.cs）。挂在顶栏下面：
 // layer-shell 窗口不占位（exclusiveZone 0），合成器自动把它放到顶栏的保留区下方。
@@ -653,7 +654,7 @@ PanelWindow {
                 text: "截图会挂在这里"
                 color: win.shell.theme.hintFg
                 font.pixelSize: 12
-                font.family: "HarmonyOS Sans SC"
+                font.family: F.ui
             }
         }
 

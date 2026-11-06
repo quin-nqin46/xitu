@@ -491,12 +491,19 @@ Scope {
         }
     }
 
+    // ---- 启动时查一遍依赖：缺必需的（wl-clipboard、inotify-tools 等）弹一次通知，见 xitu_helper.py check-deps ----
+    Process {
+        running: true
+        command: ["python3", root.helper, "check-deps", "--notify"]
+    }
+
     // ---- 截图文件夹：新文件进图库并挂上 ----
     Process {
         id: folderWatch
         running: true
-        // 文件夹由助手定（XITU_SCREENSHOT_DIR，或「图片」下的 Screenshots / 屏幕截图），见 xitu_helper.py screenshot-dir
-        command: ["python3", root.helper, "run", "sh", "-c", "d=$(python3 \"$1\" screenshot-dir) && mkdir -p \"$d\" && exec inotifywait -m -q -e close_write,moved_to --format '%w%f' \"$d\"", "sh", root.helper]
+        // 文件夹由助手定（XITU_SCREENSHOT_DIR、XDG_SCREENSHOTS_DIR，或「图片」下的 Screenshots / 屏幕截图 和「图片」根目录），
+        // 只盯已有的，不替用户建文件夹。见 xitu_helper.py screenshot-dirs / watch-shots
+        command: ["python3", root.helper, "run", "python3", root.helper, "watch-shots"]
         stdout: SplitParser {
             onRead: line => {
                 // 走 auto-import：设置 Collect 为 own 时助手不收
