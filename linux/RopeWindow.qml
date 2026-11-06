@@ -403,13 +403,16 @@ PanelWindow {
     }
 
     // 顶边感应：贴着屏幕最上沿的一条 2 像素窄带（盖在顶栏上沿，顶栏的胶囊离顶边还有十来像素，不影响点击）。
+    // 只在中间挂照片的那一段（L.triggerSpan，同 Windows TriggerZone），两边的工作区按钮、托盘、标题栏碰了不会展开。
     // 指针在这里停 0.3 秒就展开。
     PanelWindow {
         id: edge
+        readonly property var span: L.triggerSpan(win.layoutVersion >= 0 ? win.liveCount() : 0, win.modelData.width)
         screen: win.modelData
         anchors.top: true
         anchors.left: true
-        anchors.right: true
+        margins.left: Math.round(span.left)
+        implicitWidth: Math.max(1, Math.round(span.right - span.left))
         implicitHeight: 2
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"

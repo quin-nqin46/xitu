@@ -35,6 +35,15 @@ public class ParityTests
     }
 
     [Fact]
+    public void TriggerZoneMatchesLinux()
+    {
+        var js = RepoFile(Path.Combine("linux", "layout.js"));
+        Assert.Equal(LineCapacity.CardWidth, JsNumber(js, "CardWidth"));
+        Assert.Equal(TriggerZone.MinHalf, JsNumber(js, "TriggerMinHalf"));
+        Assert.Equal(TriggerZone.Margin, JsNumber(js, "TriggerMargin"));
+    }
+
+    [Fact]
     public void CollectModesMatchLinux()
     {
         var py = RepoFile(Path.Combine("linux", "xitu_helper.py"));

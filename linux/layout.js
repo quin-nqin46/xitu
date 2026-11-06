@@ -19,6 +19,9 @@ var MinItems = 3;
 var MaxItemsCap = 12;
 
 var RevealDelay = 300;
+// 顶边感应只在中间挂照片的那一段（同 Windows TriggerZone.cs）：照片两头再各加 TriggerMargin，至少 2×TriggerMinHalf 宽
+var TriggerMinHalf = 160;
+var TriggerMargin = 14;
 var RetractDelay = 500;
 var PeekDuration = 2500;
 
@@ -84,6 +87,13 @@ function ropeY(x, width) {
 function slotX(index, count, width) {
     var total = Math.max(count - 1, 0) * Spacing;
     return width / 2 - total / 2 + index * Spacing;
+}
+
+// 顶边感应段，返回 {left, right}，相对屏幕左边。以屏幕中线对称，同 slotX 的摆放
+function triggerSpan(count, width) {
+    if (width <= 0) return { left: 0, right: 0 };
+    var half = Math.max(TriggerMinHalf, Math.max(count - 1, 0) * Spacing / 2 + CardWidth / 2 + TriggerMargin);
+    return { left: Math.max(0, width / 2 - half), right: Math.min(width, width / 2 + half) };
 }
 
 // 返回 {w, h}
