@@ -113,6 +113,12 @@ dotnet run --project windows/tools/make-icon -- windows/Assets
 
 Linux 版自己不截图，靠截图文件夹和剪贴板监听收图。
 
+助手脚本的测试（需要 pytest 和 Pillow，不需要 Wayland 和桌面环境）：
+
+```
+python3 -m pytest linux/tests
+```
+
 在仓库根目录运行：
 
 ```
