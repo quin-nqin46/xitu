@@ -25,11 +25,8 @@
 
 截图平时一截就沉进文件夹。系图把最近的几张留在眼前：截图文件夹或剪贴板里来了新图，它就落到屏幕顶边的一根绳子上，轻轻晃一晃，一直挂着，直到你把它取下。单击复制，双击打开，也能直接把照片拖进聊天窗口。
 
-Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + Quickshell 上，默认是右上角的抽屉，也可以切成同样的绳子。
+Windows 版是托盘程序，每块屏幕一根绳。Linux 版跑在 Hyprland + Quickshell 上，同样是顶边的一根绳子。
 
-<p align="center">
-  <img src="docs/demo-drawer.gif" width="640" alt="Linux 抽屉模式：新截图占到大图的位置">
-</p>
 
 系图最初移植自 macOS 上的 [Tendedero](https://github.com/alejandrobujan/tendedero)（MIT，见 `NOTICE`），有自己的名字和图标，不是 Tendedero。
 
@@ -60,14 +57,10 @@ Windows：
 
 Linux（Hyprland + Quickshell）：
 
-- 两种界面模式：`drawer`（右上角抽屉，默认）和 `rope`（顶边）。环境变量 `XITU_UI=drawer|rope` 优先于 `settings.json` 的 `ui` 字段。
 - 没有托盘菜单；展开、图库、退出用 `qs ipc`（见下）或由顶栏、按键绑定触发。
 - 拖动卡片换位置。绳子和卡片的颜色（主题）可通过 IPC 切换，不用重启。
-- 从浏览器或文件管理器把图片拖到屏幕顶边，抽屉会展开把它收进来。
+- 从浏览器或文件管理器把图片拖到屏幕顶边，绳子会放下来把它收进来。
 
-<p align="center">
-  <img src="docs/demo-drawer-drop.png" width="420" alt="把图片拖到抽屉上方">
-</p>
 
 ## Windows 构建与安装
 
@@ -140,9 +133,8 @@ IPC target `xitu` 上的函数：`toggle`、`peek`、`clear`、`hang <路径>`�
 
 系图用 `qs -p linux` 就能独立运行，不依赖 Caelestia。
 
-- 抽屉配色：`drawer` 模式下，抽屉实时读取 Caelestia 的配色文件 `${XDG_STATE_HOME:-~/.local/state}/caelestia/scheme.json`；没有这个文件时用内置的一套深色。（`linux/ThemeEngine.qml`）
 - 绳子主题：`shared/themes/caelestia.json` 是按 Caelestia 配色做的一套绳子主题，用 `qs ipc -p linux call xitu setTheme caelestia` 切换。
-- 嵌入：后台逻辑单独放在 `linux/XituCore.qml`，与窗口分开，别的 Quickshell 外壳（比如 Caelestia 的配置）可以自己承载抽屉。这样用时，只有 `rope` 模式还需要本进程。
+- 嵌入：后台逻辑单独放在 `linux/XituCore.qml`，与窗口分开，别的 Quickshell 外壳可以自己承载。
 
 绳子主题里颜色写成 `accent` 的部分，可以跟随桌面外壳的强调色：用两个环境变量指向外壳提供的文件。任一个没设或读不到，就用主题自带的强调色（默认 `#3D6FE0`）。
 
@@ -156,7 +148,7 @@ Windows 路径见上文「Windows 构建与安装」。Linux 路径，每条注�
 | 路径 | 用途 | 出处 |
 |---|---|---|
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/state.json` | 绳上条目（与 Windows 版同格式） | `linux/xitu_helper.py` |
-| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | 设置（`ui`、`Theme`、`LibraryPath`、`RetentionDays`、`Collect` 等） | `linux/xitu_helper.py`；`linux/shell.qml` 从同一个文件读 `ui` 字段 |
+| `${XDG_DATA_HOME:-~/.local/share}/Xitu/settings.json` | 设置（`Theme`、`LibraryPath`、`RetentionDays`、`Collect` 等） | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/log.txt` | 助手日志 | `linux/xitu_helper.py` |
 | `${XDG_DATA_HOME:-~/.local/share}/Xitu/themes/<id>.json` | 自定义主题（id 相同则覆盖内置） | `shared/themes/README.md` |
 | 图库根目录 | `xdg-user-dir PICTURES`（取不到时用 `~/Pictures`）下的 `系图/`，可用 `LibraryPath` 改 | `linux/xitu_helper.py` |
