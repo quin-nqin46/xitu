@@ -1,0 +1,16 @@
+2026-11-07 01:42:43 [helper] 进图库 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/文件_20261107_014233.png
+2026-11-07 01:42:43 [helper] 进图库 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/文件_20261107_014233_2.png
+2026-11-07 01:42:44 [helper] 进图库 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/文件_20261107_014233_3.png
+2026-11-07 01:42:46 [helper] 进图库 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/截图_20261107_014246.png
+2026-11-07 01:42:59 [helper] 编辑 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/文件_20261107_014233.png（python3）
+2026-11-07 01:43:10 [helper] 另存为 /tmp/xitu-ui-6rik56fv/saved/另存的.png
+2026-11-07 01:43:14 [helper] 编辑 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/文件_20261107_014233_2.png（python3）
+2026-11-07 01:43:18 [helper] 进图库 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/截图_20261107_014318.png
+2026-11-07 01:43:18 [helper] 截图 500,380 801x481 /tmp/xitu-ui-6rik56fv/home/Pictures/系图/2026-11/截图_20261107_014318.png
+2026-11-07 01:43:26 [helper] 切换主题 polaroid-blue
+2026-11-07 01:43:29 [helper] 切换主题 red-rope
+2026-11-07 01:43:32 [helper] 切换主题 graphite
+2026-11-07 01:43:33 [helper] 清理过期 0 张
+2026-11-07 01:43:35 [helper] 切换主题 linen
+2026-11-07 01:43:37 [helper] 切换主题 caelestia
+2026-11-07 01:43:40 [helper] 切换主题 polaroid-blue

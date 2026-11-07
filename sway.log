@@ -1,0 +1,9 @@
+00:00:00.018 [ERROR] [wlr] [xwayland/server.c:473] Cannot find Xwayland binary "/usr/bin/Xwayland"
+00:00:00.018 [ERROR] [sway/server.c:766] Failed to start Xwayland
+2026-11-07 01:42:31 - [swaybg-1.2.2/main.c:332] Found config HEADLESS-1 for output HEADLESS-1 ((null))
+warn: wayland.c:1888: compositor does not implement the xdg-toplevel-icon protocol
+warn: terminal.c:2034: slave exited with signal 1 (Hangup)
+2026-11-07 01:43:55 - [swaybg-1.2.2/main.c:328] Could not find config for output HEADLESS-2 ((null))
+2026-11-07 01:43:55 - [swaybg-1.2.2/main.c:332] Found config HEADLESS-1 for output HEADLESS-1 ((null))
+2026-11-07 01:43:55 - [swaybg-1.2.2/main.c:332] Found config HEADLESS-2 for output HEADLESS-2 ((null))
+2026-11-07 01:44:03 - [swaybg-1.2.2/main.c:251] Destroying output HEADLESS-2 ((null))

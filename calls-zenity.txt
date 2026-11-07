@@ -1,0 +1,1 @@
+--file-selection --save --confirm-overwrite --title=另存为 --filename=/tmp/xitu-ui-6rik56fv/home/Pictures/文件_20261107_014233_2.png --file-filter=PNG 图片 | *.png
